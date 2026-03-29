@@ -20,25 +20,16 @@ export async function ask(
   userContent: string,
   useSearch = false
 ): Promise<ClaudeMessage> {
-  const body: Record<string, unknown> = {
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1000,
-    messages: [{ role: "user", content: userContent }],
-  };
-  if (system) body.system = system;
-  if (useSearch)
-    body.tools = [{ type: "web_search_20250305", name: "web_search" }];
-
   const res = await fetch("/api/claude", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ system, userContent, useSearch }),
   });
 
   const json = await res.json();
   if (json.type === "error")
     throw new Error(
-      `Claude API: ${json.error?.message || JSON.stringify(json.error)}`
+      `API Error: ${json.error?.message || JSON.stringify(json.error)}`
     );
   if (!res.ok)
     throw new Error(
