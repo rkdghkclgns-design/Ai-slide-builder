@@ -139,16 +139,33 @@ export default function BuildView({
 
       const n = Math.min(sc, 8);
       const slidePrompt = `아래 내용으로 ${n}개 슬라이드를 만들어주세요.
-첫 슬라이드: type "cover", 마지막: type "closing", 나머지: "content" 또는 "quote".
-${useImages ? `각 슬라이드에 반드시 "imagePrompt" 필드를 추가하세요.
-imagePrompt 작성 규칙:
-- 반드시 영문으로 작성
-- 슬라이드의 핵심 내용과 직접적으로 관련된 구체적 장면 묘사
-- "professional photograph of..." 또는 "illustration showing..." 으로 시작
-- 슬라이드 제목+설명의 핵심 키워드를 반드시 포함
-- 40-80단어로 상세하게 작성
-예: "professional photograph of a diverse team of engineers collaborating around a holographic AI interface in a modern glass office, with data visualizations floating in the air, warm lighting"` : ""}
-JSON만 출력: {"slides":[{"type":"cover","title":"제목","subtitle":"설명"},{"type":"content","title":"제목","description":"내용","items":[{"title":"항목","desc":"설명"}]},{"type":"closing","title":"감사합니다"}]}
+
+슬라이드 type 선택 규칙 (반드시 내용에 적합한 type을 선택):
+- "cover": 첫 슬라이드. title + subtitle
+- "intro": 주제 소개. title + description (긴 본문)
+- "objectives": 목표/요약 3가지. title + items (반드시 3개)
+- "section": 파트 구분. partNumber + title + subtitle
+- "twoColumn": 비교/대조 2가지. title + items (반드시 2개, 각각 title+desc)
+- "threeCards": 핵심 포인트 3가지. title + items (반드시 3개, 각각 title+desc)
+- "caseStudy": 사례 연구. sectionLabel="Case Study" + title + description
+- "summary": 소결/핵심 메시지. title + quote (핵심 문장) + author (선택)
+- "table": 비교표. title + tableHeaders (3개) + tableRows (3-5행, 각 3열)
+- "content": 일반 콘텐츠. title + description + items
+- "closing": 마지막 슬라이드. title
+
+첫 슬라이드는 반드시 "cover", 마지막은 "closing".
+중간 슬라이드는 내용에 따라 다양한 type을 선택하세요.
+${useImages ? '각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가.' : ""}
+
+JSON만 출력:
+{"slides":[
+  {"type":"cover","title":"제목","subtitle":"설명"},
+  {"type":"intro","title":"소개 제목","description":"본문"},
+  {"type":"threeCards","title":"핵심 포인트","items":[{"title":"항목1","desc":"설명1"},{"title":"항목2","desc":"설명2"},{"title":"항목3","desc":"설명3"}]},
+  {"type":"table","title":"비교","tableHeaders":["구분","A","B"],"tableRows":[["항목1","값1","값2"]]},
+  {"type":"summary","title":"소결","quote":"핵심 메시지"},
+  {"type":"closing","title":"감사합니다"}
+]}
 
 내용:
 ${data.substring(0, 1200)}`;

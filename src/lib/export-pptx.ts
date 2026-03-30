@@ -27,6 +27,28 @@ const T = {
   font: "맑은 고딕",
 };
 
+/* ═══ PPTX 공통 헬퍼 ═══ */
+function addDarkBg(slide: ReturnType<PptxGenJS["addSlide"]>) {
+  slide.background = { color: T.navy };
+}
+function addLightBg(slide: ReturnType<PptxGenJS["addSlide"]>) {
+  slide.background = { color: "F5F7FA" };
+}
+function addSidebar(pptx: PptxGenJS, slide: ReturnType<PptxGenJS["addSlide"]>) {
+  slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.18, h: "100%", fill: { color: T.blue } });
+}
+function addTopLine(pptx: PptxGenJS, slide: ReturnType<PptxGenJS["addSlide"]>) {
+  slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: "100%", h: 0.06, fill: { color: T.blue } });
+}
+function addPageNum(slide: ReturnType<PptxGenJS["addSlide"]>, idx: number, total: number, dark: boolean) {
+  slide.addText(`${idx + 1} / ${total}`, { x: 11.5, y: 6.8, w: 1.5, fontSize: 8, fontFace: T.font, color: dark ? "666666" : T.midGray, align: "right" });
+}
+function getItemData(s: SlideData, i: number) {
+  const it = (s.items || [])[i];
+  if (!it) return null;
+  return typeof it === "string" ? { t: it, d: undefined } : { t: it.title, d: it.desc };
+}
+
 /* ═══ 템플릿 모드: 원본 PPTX 레이아웃 재현 ═══ */
 function buildTemplateSlide(
   pptx: PptxGenJS,
@@ -39,208 +61,84 @@ function buildTemplateSlide(
   const accentColors = [T.blue, T.red, T.green];
   const accent = accentColors[idx % 3];
 
+  const isDark = ["cover", "closing", "intro", "section", "summary"].includes(type);
+  if (isDark) addDarkBg(slide); else addLightBg(slide);
+  addSidebar(pptx, slide);
+  if (!isDark) addTopLine(pptx, slide);
+
   if (type === "cover") {
-    // 커버: Navy 배경 + 좌측 액센트 바 + 큰 제목
-    slide.background = { color: T.navy };
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: 0.18, h: "100%",
-      fill: { color: T.blue },
-    });
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0.18, y: 4.8, w: 12.82, h: 0.04,
-      fill: { color: T.blue },
-    });
-    slide.addText(s.title || "", {
-      x: 0.8, y: 1.2, w: 10, h: 2,
-      fontSize: 40, fontFace: T.font, bold: true,
-      color: T.white, valign: "bottom",
-    });
-    if (s.subtitle) {
-      slide.addText(s.subtitle, {
-        x: 0.8, y: 3.5, w: 10,
-        fontSize: 18, fontFace: T.font,
-        color: T.lightBlue,
-      });
-    }
-    // 슬라이드 번호
-    slide.addText("AI Slide Builder", {
-      x: 9, y: 6.5, w: 4,
-      fontSize: 9, fontFace: T.font,
-      color: T.lightBlue, align: "right",
-    });
+    slide.addText(s.title || "", { x: 0.8, y: 1.5, w: 10, h: 2, fontSize: 40, fontFace: T.font, bold: true, color: T.white, valign: "bottom" });
+    if (s.subtitle) slide.addText(s.subtitle, { x: 0.8, y: 3.8, w: 10, fontSize: 18, fontFace: T.font, color: T.lightBlue });
+    slide.addText("AI Slide Builder", { x: 9, y: 6.5, w: 4, fontSize: 9, fontFace: T.font, color: T.lightBlue, align: "right" });
   } else if (type === "closing") {
-    // 마무리: Navy 배경 + 중앙 메시지
-    slide.background = { color: T.navy };
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: 0.18, h: "100%",
-      fill: { color: T.blue },
+    slide.addText(s.title || "\uac10\uc0ac\ud569\ub2c8\ub2e4", { x: 1, y: 2, w: 11, h: 3, fontSize: 44, fontFace: T.font, bold: true, color: T.white, align: "center", valign: "middle" });
+    if (s.subtitle) slide.addText(s.subtitle, { x: 1, y: 5, w: 11, fontSize: 16, fontFace: T.font, color: T.lightBlue, align: "center" });
+  } else if (type === "intro") {
+    slide.addText("INTRODUCTION", { x: 0.8, y: 0.8, w: 5, fontSize: 10, fontFace: T.font, bold: true, color: T.blue, charSpacing: 3 });
+    slide.addText(s.title || "", { x: 0.8, y: 1.5, w: 10, fontSize: 32, fontFace: T.font, bold: true, color: T.white });
+    if (s.description) slide.addText(s.description, { x: 0.8, y: 3, w: 10, h: 3, fontSize: 14, fontFace: T.font, color: T.lightBlue, lineSpacing: 24 });
+  } else if (type === "section") {
+    slide.addText(`Part ${s.partNumber || idx}`, { x: 0.8, y: 2, w: 11, fontSize: 18, fontFace: T.font, bold: true, color: T.blue, align: "center" });
+    slide.addText(s.title || "", { x: 0.8, y: 2.8, w: 11, fontSize: 40, fontFace: T.font, bold: true, color: T.white, align: "center" });
+    if (s.subtitle) slide.addText(s.subtitle, { x: 0.8, y: 4.2, w: 11, fontSize: 16, fontFace: T.font, color: T.lightBlue, align: "center" });
+  } else if (type === "summary" || type === "quote") {
+    slide.addText("\u201C", { x: 1, y: 0.8, w: 1, fontSize: 72, fontFace: "Georgia", color: T.blue });
+    slide.addText(s.title || "", { x: 1.5, y: 1.5, w: 10, fontSize: 28, fontFace: T.font, bold: true, color: isDark ? T.white : T.navy, align: "center" });
+    slide.addText(s.quote || s.description || "", { x: 1.5, y: 2.8, w: 10, h: 2.5, fontSize: 16, fontFace: T.font, italic: true, color: isDark ? T.lightBlue : T.midGray, align: "center", valign: "middle", lineSpacing: 26 });
+    if (s.author) slide.addText(`\u2014 ${s.author}`, { x: 1.5, y: 5.5, w: 10, fontSize: 12, fontFace: T.font, color: T.midGray, align: "center" });
+  } else if (type === "twoColumn") {
+    slide.addText(s.title || "", { x: 0.8, y: 0.7, w: 11, fontSize: 26, fontFace: T.font, bold: true, color: T.navy });
+    slide.addShape(pptx.ShapeType.rect, { x: 0.8, y: 1.4, w: 2.5, h: 0.04, fill: { color: accent } });
+    [0, 1].forEach(i => {
+      const it = getItemData(s, i);
+      if (!it) return;
+      const x = 0.8 + i * 5.7;
+      slide.addShape(pptx.ShapeType.roundRect, { x, y: 1.8, w: 5.4, h: 4, fill: { color: T.navy }, rectRadius: 0.15 });
+      slide.addText(it.t, { x: x + 0.4, y: 2.2, w: 4.6, fontSize: 16, fontFace: T.font, bold: true, color: T.white });
+      if (it.d) slide.addText(it.d, { x: x + 0.4, y: 3.2, w: 4.6, h: 2, fontSize: 12, fontFace: T.font, color: T.lightBlue, lineSpacing: 20 });
     });
-    slide.addText(s.title || "감사합니다", {
-      x: 1, y: 2, w: 11, h: 3,
-      fontSize: 44, fontFace: T.font, bold: true,
-      color: T.white, align: "center", valign: "middle",
-    });
-    if (s.subtitle) {
-      slide.addText(s.subtitle, {
-        x: 1, y: 5, w: 11,
-        fontSize: 16, fontFace: T.font,
-        color: T.lightBlue, align: "center",
-      });
+  } else if (type === "table") {
+    slide.addText(s.title || "", { x: 0.8, y: 0.7, w: 11, fontSize: 26, fontFace: T.font, bold: true, color: T.navy });
+    slide.addShape(pptx.ShapeType.rect, { x: 0.8, y: 1.4, w: 2.5, h: 0.04, fill: { color: accent } });
+    if (s.tableHeaders && s.tableRows) {
+      const rows = [s.tableHeaders, ...s.tableRows];
+      slide.addTable(
+        rows.map((r, ri) => r.map(c => ({ text: c, options: { fontSize: 11, fontFace: T.font, color: ri === 0 ? T.white : T.darkGray, bold: ri === 0 } }))),
+        { x: 0.8, y: 1.8, w: 11.4, colW: Array(s.tableHeaders.length).fill(11.4 / s.tableHeaders.length), border: { type: "solid", pt: 0.5, color: T.lightBlue }, autoPage: false, rowH: rows.map((_, i) => i === 0 ? 0.5 : 0.4) }
+      );
+      // Header row background - add manually via shape
+      slide.addShape(pptx.ShapeType.rect, { x: 0.8, y: 1.8, w: 11.4, h: 0.5, fill: { color: T.navy } });
     }
-  } else if (type === "quote") {
-    // 인용/소결: 흰 배경 + 상단바 + 큰 따옴표 + 중앙 텍스트
-    slide.background = { color: T.white };
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: "100%", h: 0.06,
-      fill: { color: T.blue },
-    });
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: 0.18, h: "100%",
-      fill: { color: T.navy },
-    });
-    // 큰 따옴표
-    slide.addText("\u201C", {
-      x: 1, y: 0.8, w: 1,
-      fontSize: 72, fontFace: "Georgia",
-      color: T.blue,
-    });
-    if (s.sectionLabel) {
-      slide.addText(s.sectionLabel, {
-        x: 0.8, y: 0.4, w: 4,
-        fontSize: 10, fontFace: T.font, bold: true,
-        color: T.blue, charSpacing: 2,
-      });
-    }
-    slide.addText(s.title || "", {
-      x: 1.5, y: 1.5, w: 10,
-      fontSize: 28, fontFace: T.font, bold: true,
-      color: T.navy, align: "center",
-    });
-    slide.addText(s.quote || s.description || "", {
-      x: 1.5, y: 2.8, w: 10, h: 2.5,
-      fontSize: 16, fontFace: T.font, italic: true,
-      color: T.midGray, align: "center", valign: "middle",
-      lineSpacing: 26,
-    });
-    if (s.author) {
-      slide.addText(`\u2014 ${s.author}`, {
-        x: 1.5, y: 5.5, w: 10,
-        fontSize: 12, fontFace: T.font,
-        color: T.midGray, align: "center",
-      });
-    }
-    // 페이지 번호
-    slide.addText(`${idx + 1} / ${total}`, {
-      x: 11.5, y: 6.8, w: 1.5,
-      fontSize: 8, fontFace: T.font,
-      color: T.midGray, align: "right",
-    });
   } else {
-    // 콘텐츠: 흰 배경 + 상단바 + 좌측 사이드바 + 카드 그리드
-    slide.background = { color: T.white };
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: "100%", h: 0.06,
-      fill: { color: T.blue },
-    });
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: 0.18, h: "100%",
-      fill: { color: T.navy },
-    });
-
-    // 섹션 라벨
-    if (s.sectionLabel) {
-      slide.addText(s.sectionLabel.toUpperCase(), {
-        x: 0.8, y: 0.35, w: 5,
-        fontSize: 9, fontFace: T.font, bold: true,
-        color: T.blue, charSpacing: 3,
-      });
-    }
-
-    // 제목
-    slide.addText(s.title || "", {
-      x: 0.8, y: 0.7, w: 11,
-      fontSize: 26, fontFace: T.font, bold: true,
-      color: T.navy,
-    });
-
-    // 제목 밑 액센트 라인
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0.8, y: 1.45, w: 2.5, h: 0.04,
-      fill: { color: accent },
-    });
-
-    // 설명 텍스트
-    let contentY = 1.7;
+    // content, threeCards, objectives, caseStudy, comparison — 카드 기반
+    const label = type === "caseStudy" ? "CASE STUDY" : s.sectionLabel?.toUpperCase();
+    const labelColor = type === "caseStudy" ? T.red : T.blue;
+    if (label) slide.addText(label, { x: 0.8, y: 0.35, w: 5, fontSize: 9, fontFace: T.font, bold: true, color: labelColor, charSpacing: 3 });
+    slide.addText(s.title || "", { x: 0.8, y: label ? 0.7 : 0.5, w: 11, fontSize: 26, fontFace: T.font, bold: true, color: T.navy });
+    slide.addShape(pptx.ShapeType.rect, { x: 0.8, y: label ? 1.45 : 1.2, w: 2.5, h: 0.04, fill: { color: accent } });
+    let cY = label ? 1.7 : 1.5;
     if (s.description) {
-      slide.addText(s.description, {
-        x: 0.8, y: contentY, w: 11,
-        fontSize: 13, fontFace: T.font,
-        color: T.darkGray, lineSpacing: 22,
-      });
-      contentY += 1.2;
+      slide.addText(s.description, { x: 0.8, y: cY, w: 11, fontSize: 13, fontFace: T.font, color: T.darkGray, lineSpacing: 22 });
+      cY += 1.2;
     }
-
-    // 아이템 카드
     if (s.items && s.items.length > 0) {
-      const itemCount = s.items.length;
-      const cols = itemCount <= 3 ? itemCount : itemCount <= 4 ? 2 : 3;
-      const cardW = (11.4 - (cols - 1) * 0.3) / cols;
-      const cardH = 1.6;
-
+      const n = s.items.length;
+      const cols = n <= 3 ? n : n <= 4 ? 2 : 3;
+      const cW = (11.4 - (cols - 1) * 0.3) / cols;
+      const cH = 1.6;
       s.items.forEach((item, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const x = 0.8 + col * (cardW + 0.3);
-        const y = contentY + row * (cardH + 0.25);
-        const itemTitle = typeof item === "string" ? item : item.title;
-        const itemDesc = typeof item !== "string" ? item.desc : undefined;
-
-        // 카드 배경
-        slide.addShape(pptx.ShapeType.roundRect, {
-          x, y, w: cardW, h: cardH,
-          fill: { color: T.lightGray },
-          rectRadius: 0.08,
-          line: { color: T.lightBlue, width: 0.8 },
-        });
-
-        // 카드 상단 액센트
-        slide.addShape(pptx.ShapeType.rect, {
-          x: x + 0.15, y, w: cardW - 0.3, h: 0.04,
-          fill: { color: accent },
-        });
-
-        // 카드 텍스트
-        slide.addText(
-          [
-            {
-              text: itemTitle,
-              options: {
-                fontSize: 12, bold: true, color: T.navy,
-                breakLine: true,
-              },
-            },
-            ...(itemDesc
-              ? [{
-                  text: "\n" + itemDesc,
-                  options: { fontSize: 10, color: T.midGray },
-                }]
-              : []),
-          ],
-          {
-            x: x + 0.2, y: y + 0.2, w: cardW - 0.4, h: cardH - 0.3,
-            fontFace: T.font, valign: "top",
-          }
-        );
+        const col = i % cols; const row = Math.floor(i / cols);
+        const x = 0.8 + col * (cW + 0.3); const y = cY + row * (cH + 0.25);
+        const iT = typeof item === "string" ? item : item.title;
+        const iD = typeof item !== "string" ? item.desc : undefined;
+        const ac = accentColors[i % 3];
+        slide.addShape(pptx.ShapeType.roundRect, { x, y, w: cW, h: cH, fill: { color: T.lightGray }, rectRadius: 0.08, line: { color: T.lightBlue, width: 0.8 } });
+        slide.addShape(pptx.ShapeType.rect, { x: x + 0.15, y, w: cW - 0.3, h: 0.04, fill: { color: ac } });
+        slide.addText([{ text: iT, options: { fontSize: 12, bold: true, color: T.navy, breakLine: true } }, ...(iD ? [{ text: "\n" + iD, options: { fontSize: 10, color: T.midGray } }] : [])], { x: x + 0.2, y: y + 0.2, w: cW - 0.4, h: cH - 0.3, fontFace: T.font, valign: "top" });
       });
     }
-
-    // 페이지 번호
-    slide.addText(`${idx + 1} / ${total}`, {
-      x: 11.5, y: 6.8, w: 1.5,
-      fontSize: 8, fontFace: T.font,
-      color: T.midGray, align: "right",
-    });
   }
+  addPageNum(slide, idx, total, isDark);
 }
 
 /* ═══ 기본 모드: 웹 테마 색상 기반 ═══ */

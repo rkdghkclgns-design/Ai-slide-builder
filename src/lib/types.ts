@@ -31,7 +31,20 @@ export interface SlideSide {
 }
 
 export interface SlideData {
-  type?: "cover" | "content" | "quote" | "comparison" | "closing";
+  type?:
+    | "cover"
+    | "intro"
+    | "objectives"
+    | "section"
+    | "twoColumn"
+    | "caseStudy"
+    | "threeCards"
+    | "summary"
+    | "table"
+    | "content"
+    | "quote"
+    | "comparison"
+    | "closing";
   title?: string;
   titleGrad?: string;
   subtitle?: string;
@@ -47,6 +60,9 @@ export interface SlideData {
   sources?: string;
   imagePrompt?: string;
   imageUrl?: string;
+  partNumber?: number;
+  tableHeaders?: string[];
+  tableRows?: string[][];
 }
 
 export interface Source {
