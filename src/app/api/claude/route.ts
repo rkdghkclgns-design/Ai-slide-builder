@@ -59,8 +59,7 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // Gemini 2.0 Flash 사용 (무료 티어 가능)
-    const model = "gemini-2.0-flash";
+    const model = "gemini-2.5-flash-preview-05-20";
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const res = await fetch(geminiUrl, {
