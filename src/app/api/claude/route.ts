@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiKey } from "@/lib/supabase";
 
+export async function GET() {
+  return NextResponse.json({ status: "ok", service: "gemini" });
+}
+
 interface GeminiContent {
   role: string;
   parts: { text: string }[];
