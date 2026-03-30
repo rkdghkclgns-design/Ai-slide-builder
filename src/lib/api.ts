@@ -94,6 +94,9 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
-export function makeImageUrl(prompt: string, index: number): string {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&nologo=true&enhance=true&seed=${index * 97 + 7}&t=${Date.now()}`;
+export function makeImageUrl(_prompt: string, index: number): string {
+  // Lorem Picsum — 무료, 안정적, 고품질 랜덤 이미지
+  // 프롬프트 해시 기반 시드로 같은 프롬프트에 같은 이미지
+  const seed = (index + 1) * 47 + _prompt.length;
+  return `https://picsum.photos/seed/${seed}/800/450`;
 }
