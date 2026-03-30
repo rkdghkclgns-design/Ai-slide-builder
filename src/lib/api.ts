@@ -26,15 +26,23 @@ export async function ask(
     body: JSON.stringify({ system, userContent, useSearch }),
   });
 
+  if (!res.ok) {
+    let errorMsg = `HTTP ${res.status}`;
+    try {
+      const errJson = await res.json();
+      errorMsg = errJson.error?.message || JSON.stringify(errJson).substring(0, 200);
+    } catch {
+      // non-JSON error response
+    }
+    throw new Error(`API Error: ${errorMsg}`);
+  }
+
   const json = await res.json();
-  if (json.type === "error")
+  if (json.type === "error") {
     throw new Error(
       `API Error: ${json.error?.message || JSON.stringify(json.error)}`
     );
-  if (!res.ok)
-    throw new Error(
-      `HTTP ${res.status}: ${JSON.stringify(json).substring(0, 200)}`
-    );
+  }
   return json;
 }
 

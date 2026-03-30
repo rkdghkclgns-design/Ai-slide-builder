@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ImageIcon, AlertCircle } from "lucide-react";
 
 interface SlideImageProps {
@@ -13,6 +13,7 @@ export default function SlideImage({ src, tm, cb }: SlideImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!src) return;
@@ -20,12 +21,22 @@ export default function SlideImage({ src, tm, cb }: SlideImageProps) {
     setErrored(false);
     setTimedOut(false);
 
-    const timer = setTimeout(() => {
-      if (!loaded) setTimedOut(true);
+    timerRef.current = setTimeout(() => {
+      setTimedOut(true);
     }, 20000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [src]);
+
+  const handleLoad = () => {
+    setLoaded(true);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
   if (!src) return null;
 
@@ -59,7 +70,7 @@ export default function SlideImage({ src, tm, cb }: SlideImageProps) {
         alt=""
         className="w-full rounded-2xl object-cover transition-opacity duration-500"
         style={{ maxHeight: 224, opacity: loaded ? 1 : 0 }}
-        onLoad={() => setLoaded(true)}
+        onLoad={handleLoad}
         onError={() => setErrored(true)}
       />
     </div>

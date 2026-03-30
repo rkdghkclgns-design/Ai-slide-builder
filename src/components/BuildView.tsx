@@ -630,7 +630,7 @@ ${data.substring(0, 1200)}`;
           {/* Theme grid */}
           {!aiTheme && (
             <div className="grid grid-cols-5 gap-3">
-              {Object.values(THEMES).map((th) => (
+              {Object.values(THEMES).filter((th) => th.id !== "pptxTemplate").map((th) => (
                 <div key={th.id} className="space-y-2">
                   <button
                     onClick={() => setThemeId(th.id)}
