@@ -138,6 +138,17 @@ function buildTemplateSlide(
       });
     }
   }
+  // 이미지 추가 (data:image/... base64 지원)
+  if (s.imageUrl && !isDark) {
+    if (s.imageUrl.startsWith("data:")) {
+      slide.addImage({ data: s.imageUrl, x: 8, y: 4, w: 4.2, h: 2.5, rounding: true });
+    } else {
+      try {
+        slide.addImage({ path: s.imageUrl, x: 8, y: 4, w: 4.2, h: 2.5, rounding: true });
+      } catch { /* skip invalid URLs */ }
+    }
+  }
+
   addPageNum(slide, idx, total, isDark);
 }
 
@@ -220,6 +231,14 @@ function buildDefaultSlide(
           { x: x + 0.2, y: y + 0.2, w: cardW - 0.4, h: 1.1, fontFace: "Arial" }
         );
       });
+    }
+    // 기본 모드 이미지 추가
+    if (s.imageUrl) {
+      if (s.imageUrl.startsWith("data:")) {
+        slide.addImage({ data: s.imageUrl, x: 8, y: 1.5, w: 4.2, h: 2.5, rounding: true });
+      } else {
+        try { slide.addImage({ path: s.imageUrl, x: 8, y: 1.5, w: 4.2, h: 2.5, rounding: true }); } catch {}
+      }
     }
   }
 }
