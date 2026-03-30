@@ -54,8 +54,175 @@ function GridOverlay({ theme }: { theme: Theme }) {
   );
 }
 
+/* ═══ PPTX 템플릿 스타일 슬라이드 ═══ */
+function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
+  const type = s.type || "content";
+  const isDark = type === "cover" || type === "closing";
+
+  return (
+    <div
+      className="relative flex h-full flex-col"
+      style={{
+        fontFamily: "'맑은 고딕','Malgun Gothic',sans-serif",
+        background: isDark ? "#1a2744" : "#f5f7fa",
+      }}
+    >
+      {/* 배경 이미지 (커버/마무리) */}
+      {isDark && (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: "url(/template-bg.png)",
+            opacity: 0.9,
+          }}
+        />
+      )}
+
+      {/* 좌측 파란 사이드바 */}
+      <div
+        className="absolute left-0 top-0 h-full"
+        style={{ width: 6, background: "#4F81BD" }}
+      />
+
+      {/* 상단 파란 라인 (콘텐츠 슬라이드) */}
+      {!isDark && (
+        <div
+          className="absolute left-0 right-0 top-0"
+          style={{ height: 4, background: "#4F81BD" }}
+        />
+      )}
+
+      {/* 콘텐츠 영역 */}
+      <div className="relative z-10 flex flex-1 flex-col justify-center px-16">
+        {type === "cover" && (
+          <div className="animate-slide-up space-y-4 text-center">
+            <h1
+              className="text-5xl font-bold leading-tight tracking-tight md:text-6xl"
+              style={{ color: "#FFFFFF" }}
+            >
+              {s.title}
+            </h1>
+            {s.subtitle && (
+              <p className="mx-auto max-w-2xl text-lg" style={{ color: "rgba(255,255,255,.6)" }}>
+                {s.subtitle}
+              </p>
+            )}
+          </div>
+        )}
+
+        {type === "closing" && (
+          <div className="animate-slide-up space-y-3 text-center">
+            <h1
+              className="text-5xl font-bold md:text-6xl"
+              style={{ color: "#FFFFFF" }}
+            >
+              {s.title || "감사합니다"}
+            </h1>
+            {s.subtitle && (
+              <p className="text-lg" style={{ color: "rgba(255,255,255,.5)" }}>
+                {s.subtitle}
+              </p>
+            )}
+          </div>
+        )}
+
+        {type === "quote" && (
+          <div className="animate-slide-up mx-auto max-w-3xl space-y-6 text-center">
+            <span className="text-6xl" style={{ color: "#4F81BD", fontFamily: "Georgia,serif" }}>
+              &ldquo;
+            </span>
+            <h2 className="text-3xl font-bold" style={{ color: "#1a2744" }}>
+              {s.title}
+            </h2>
+            <p className="text-lg italic leading-relaxed" style={{ color: "#555" }}>
+              {s.quote || s.description}
+            </p>
+            {s.author && (
+              <p className="text-sm" style={{ color: "#888" }}>&mdash; {s.author}</p>
+            )}
+          </div>
+        )}
+
+        {type === "content" && (
+          <div className="animate-slide-up space-y-5">
+            {s.sectionLabel && (
+              <span
+                className="text-xs font-bold uppercase tracking-widest"
+                style={{ color: "#4F81BD" }}
+              >
+                {s.sectionLabel}
+              </span>
+            )}
+            <h2 className="text-3xl font-bold md:text-4xl" style={{ color: "#1a2744" }}>
+              {s.title}
+            </h2>
+            <div
+              style={{ width: 80, height: 3, background: "#4F81BD", borderRadius: 2 }}
+            />
+            {s.description && (
+              <p className="max-w-3xl text-base leading-relaxed" style={{ color: "#444" }}>
+                {s.description}
+              </p>
+            )}
+            {s.items && s.items.length > 0 && (
+              <div
+                className={
+                  s.items.length <= 3
+                    ? "grid gap-4 md:grid-cols-3"
+                    : "grid gap-4 md:grid-cols-2"
+                }
+              >
+                {s.items.map((item, i) => {
+                  const title = typeof item === "string" ? item : item.title;
+                  const desc = typeof item !== "string" ? item.desc : undefined;
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-2xl border p-5"
+                      style={{
+                        background: "#FFFFFF",
+                        borderColor: "#d6e4f0",
+                        borderTop: "3px solid #4F81BD",
+                      }}
+                    >
+                      <h4
+                        className="mb-1.5 text-sm font-bold"
+                        style={{ color: "#1a2744" }}
+                      >
+                        {title}
+                      </h4>
+                      {desc && (
+                        <p className="text-xs leading-relaxed" style={{ color: "#666" }}>
+                          {desc}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 페이지 번호 */}
+      <div
+        className="absolute bottom-4 right-6 text-xs"
+        style={{ color: isDark ? "rgba(255,255,255,.3)" : "#999" }}
+      >
+        {idx + 1}
+      </div>
+    </div>
+  );
+}
+
 export default function Slide({ slide: s, theme: t, idx }: SlideProps) {
   if (!s) return null;
+
+  // PPTX 템플릿 테마일 때 별도 렌더링
+  if (t.id === "pptxTemplate") {
+    return <TemplateSlide slide={s} idx={idx} />;
+  }
 
   const accentColors = [t.a1, t.a2, t.a3];
   const accent = accentColors[idx % 3];
