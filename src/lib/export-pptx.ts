@@ -355,18 +355,18 @@ export async function exportToPptx(
   useTemplate = false
 ): Promise<void> {
   const fileName = title || "presentation";
-
-  // 템플릿 ON → 원본 PPTX 파일에서 텍스트만 교체
-  if (useTemplate) {
-    return exportWithOriginalTemplate(slides, fileName);
-  }
-
-  // 템플릿 OFF → pptxgenjs로 새로 생성 (테마 색상 반영)
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = "AI Slide Builder";
   pptx.title = fileName;
 
-  slides.forEach((s, i) => buildTemplateSlide(pptx, s, i, slides.length));
+  if (useTemplate) {
+    // 템플릿 ON → pptxgenjs로 템플릿 스타일 + AI 콘텐츠 모두 포함
+    slides.forEach((s, i) => buildTemplateSlide(pptx, s, i, slides.length));
+  } else {
+    // 템플릿 OFF → 웹 테마 색상 기반
+    slides.forEach((s) => buildDefaultSlide(pptx, s, theme));
+  }
+
   await pptx.writeFile({ fileName: `${fileName}.pptx` });
 }
