@@ -183,11 +183,11 @@ ${data.substring(0, 1200)}`;
 
       if (useImages) {
         onStatusChange("AI 이미지 생성 중...");
-        onProgressChange(85);
+        onProgressChange(80);
 
-        const imagePromises = allSlides.map((s) => {
-          if (s.imagePrompt) return generateImage(s.imagePrompt);
-          // 슬라이드 내용에서 상세한 이미지 프롬프트 구성
+        // 슬라이드별 이미지 프롬프트 구성
+        const prompts = allSlides.map((s) => {
+          if (s.imagePrompt) return s.imagePrompt;
           const context = [
             s.title,
             s.description,
@@ -197,18 +197,29 @@ ${data.substring(0, 1200)}`;
           ]
             .filter(Boolean)
             .join(", ");
-          const prompt = context
+          return context
             ? `professional photograph related to: ${context}. Style: clean, modern, high quality`
             : "modern abstract business presentation visual";
-          return generateImage(prompt);
         });
 
-        const imageResults = await Promise.allSettled(imagePromises);
-        allSlides = allSlides.map((s, i) => {
-          const result = imageResults[i];
-          const url = result.status === "fulfilled" ? result.value : null;
-          return url ? { ...s, imageUrl: url } : s;
-        });
+        // 2개씩 순차 배치로 생성 (rate limit 방지)
+        const imageUrls: (string | null)[] = new Array(prompts.length).fill(null);
+        const batchSize = 2;
+        for (let i = 0; i < prompts.length; i += batchSize) {
+          const batch = prompts.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map((p) => generateImage(p))
+          );
+          results.forEach((r, j) => {
+            imageUrls[i + j] = r.status === "fulfilled" ? r.value : null;
+          });
+          onStatusChange(`이미지 생성 중... (${Math.min(i + batchSize, prompts.length)}/${prompts.length})`);
+          onProgressChange(80 + Math.round(((i + batchSize) / prompts.length) * 15));
+        }
+
+        allSlides = allSlides.map((s, i) =>
+          imageUrls[i] ? { ...s, imageUrl: imageUrls[i]! } : s
+        );
       }
 
       const finalTheme =
