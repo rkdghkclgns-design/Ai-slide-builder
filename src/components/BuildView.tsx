@@ -136,7 +136,7 @@ export default function BuildView({
       const n = Math.min(sc, 8);
       const slidePrompt = `아래 내용으로 ${n}개 슬라이드를 만들어주세요.
 첫 슬라이드: type "cover", 마지막: type "closing", 나머지: "content" 또는 "quote".
-${useImages ? "각 content 슬라이드에 imagePrompt(영문) 추가." : ""}
+${useImages ? '각 content/quote 슬라이드에 반드시 "imagePrompt" 필드를 추가하세요. 값은 영문으로 된 구체적인 이미지 설명입니다. 예: "futuristic AI robot in office"' : ""}
 JSON만 출력: {"slides":[{"type":"cover","title":"제목","subtitle":"설명"},{"type":"content","title":"제목","description":"내용","items":[{"title":"항목","desc":"설명"}]},{"type":"closing","title":"감사합니다"}]}
 
 내용:
@@ -175,10 +175,12 @@ ${data.substring(0, 1200)}`;
       }
 
       if (useImages) {
-        allSlides = allSlides.map((s, i) => ({
-          ...s,
-          imageUrl: s.imagePrompt ? makeImageUrl(s.imagePrompt, i) : s.imageUrl,
-        }));
+        allSlides = allSlides.map((s, i) => {
+          if (s.type === "cover" || s.type === "closing") return s;
+          const prompt =
+            s.imagePrompt || s.title || `slide ${i + 1} presentation`;
+          return { ...s, imageUrl: makeImageUrl(prompt, i) };
+        });
       }
 
       const finalTheme =
