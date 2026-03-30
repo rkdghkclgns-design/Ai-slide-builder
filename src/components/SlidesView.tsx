@@ -92,39 +92,28 @@ export default function SlidesView({
         <rect width="100%" height="100%" filter="url(#g)" />
       </svg>
 
-      {/* Top bar — glass pill */}
-      <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium backdrop-blur-md transition-all hover:scale-105"
-            style={{
-              borderColor: t.cd,
-              background: `${t.cb}`,
-              color: t.tm,
-            }}
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            돌아가기
-          </button>
-          {sources.length > 0 && (
+      {/* Top bar — always visible */}
+      <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-3">
+        <div
+          className="flex items-center gap-2 rounded-2xl px-3 py-2 backdrop-blur-xl"
+          style={{ background: "rgba(15,23,42,.75)" }}
+        >
+          {[
+            { onClick: onBack, icon: <ChevronLeft className="h-3.5 w-3.5" />, label: "돌아가기" },
+            ...(sources.length > 0
+              ? [{ onClick: () => setShowSrc(true), icon: <BookOpen className="h-3.5 w-3.5" />, label: `출처(${sources.length})` }]
+              : []),
+            { onClick: () => setShowSave(true), icon: <Save className="h-3.5 w-3.5" />, label: "서식 저장" },
+          ].map((btn, i) => (
             <button
-              onClick={() => setShowSrc(true)}
-              className="flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium backdrop-blur-md transition-all hover:scale-105"
-              style={{ borderColor: t.cd, background: t.cb, color: t.tm }}
+              key={i}
+              onClick={btn.onClick}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white"
             >
-              <BookOpen className="h-3.5 w-3.5" />
-              출처({sources.length})
+              {btn.icon}
+              {btn.label}
             </button>
-          )}
-          <button
-            onClick={() => setShowSave(true)}
-            className="flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium backdrop-blur-md transition-all hover:scale-105"
-            style={{ borderColor: t.cd, background: t.cb, color: t.tm }}
-          >
-            <Save className="h-3.5 w-3.5" />
-            서식 저장
-          </button>
+          ))}
           <button
             onClick={async () => {
               setExporting(true);
@@ -137,32 +126,26 @@ export default function SlidesView({
               }
             }}
             disabled={exporting}
-            className="flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium backdrop-blur-md transition-all hover:scale-105"
-            style={{ borderColor: t.cd, background: t.cb, color: t.tm }}
+            className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/25"
           >
             <Download className="h-3.5 w-3.5" />
             {exporting ? "내보내는 중..." : "PPTX 다운로드"}
           </button>
         </div>
-        <div className="flex w-44 items-center gap-3">
-          <div
-            className="h-1.5 flex-1 overflow-hidden rounded-full"
-            style={{
-              background: isLt ? "rgba(0,0,0,.06)" : "rgba(255,255,255,.05)",
-            }}
-          >
+        <div
+          className="flex w-40 items-center gap-2 rounded-2xl px-3 py-2 backdrop-blur-xl"
+          style={{ background: "rgba(15,23,42,.75)" }}
+        >
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${pct}%`,
-                background: `linear-gradient(90deg,${t.a1},${t.a2})`,
+                background: "linear-gradient(90deg,#4F81BD,#C0504D)",
               }}
             />
           </div>
-          <span
-            className="text-[10px] font-medium"
-            style={{ fontFamily: t.hf, color: t.tm }}
-          >
+          <span className="text-[10px] font-medium text-white/60">
             {cur + 1}/{slides.length}
           </span>
         </div>
@@ -173,9 +156,12 @@ export default function SlidesView({
         <Slide slide={slides[cur]} theme={t} idx={cur} />
       </div>
 
-      {/* Bottom nav — glass pill */}
-      <div className="absolute inset-x-0 bottom-0 z-50 flex items-center justify-between px-8 py-5">
-        <div className="flex max-w-[60%] flex-wrap items-center gap-1.5">
+      {/* Bottom nav — always visible */}
+      <div className="absolute inset-x-0 bottom-0 z-50 flex items-center justify-between px-8 py-4">
+        <div
+          className="flex max-w-[60%] flex-wrap items-center gap-1.5 rounded-2xl px-3 py-2 backdrop-blur-xl"
+          style={{ background: "rgba(15,23,42,.7)" }}
+        >
           {slides.map((_, i) => (
             <button
               key={i}
@@ -184,21 +170,22 @@ export default function SlidesView({
               style={
                 i === cur
                   ? {
-                      width: 32,
-                      background: t.a1,
-                      boxShadow: `0 0 12px ${t.a1}50`,
+                      width: 28,
+                      background: "#4F81BD",
+                      boxShadow: "0 0 8px rgba(79,129,189,.5)",
                     }
                   : {
                       width: 8,
-                      background: isLt
-                        ? "rgba(0,0,0,.1)"
-                        : "rgba(255,255,255,.08)",
+                      background: "rgba(255,255,255,.2)",
                     }
               }
             />
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 rounded-2xl px-2 py-1.5 backdrop-blur-xl"
+          style={{ background: "rgba(15,23,42,.7)" }}
+        >
           {([-1, 1] as const).map((d) => {
             const disabled =
               d === -1 ? cur === 0 : cur === slides.length - 1;
@@ -207,13 +194,8 @@ export default function SlidesView({
                 key={d}
                 onClick={() => goNav(d)}
                 disabled={disabled}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border backdrop-blur-md transition-all hover:scale-110"
-                style={{
-                  borderColor: t.cd,
-                  background: t.cb,
-                  color: disabled ? t.tm : t.ts,
-                  opacity: disabled ? 0.4 : 1,
-                }}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-white/80 transition-all hover:bg-white/15 hover:text-white"
+                style={{ opacity: disabled ? 0.3 : 1 }}
               >
                 {d === -1 ? (
                   <ChevronLeft className="h-4 w-4" />
