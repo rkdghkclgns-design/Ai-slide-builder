@@ -63,12 +63,48 @@ function buildStyles(theme: Theme, useTemplate: boolean): StyleSet {
   };
 }
 
+async function exportWithTemplate(
+  slides: SlideData[],
+  title: string
+): Promise<void> {
+  const res = await fetch("/api/export-pptx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slides }),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  if (!json.pptx) throw new Error("PPTX 생성 실패");
+
+  // base64 → Blob → download
+  const byteChars = atob(json.pptx);
+  const byteArray = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteArray[i] = byteChars.charCodeAt(i);
+  }
+  const blob = new Blob([byteArray], {
+    type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${title}.pptx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function exportToPptx(
   slides: SlideData[],
   theme: Theme,
   title?: string,
   useTemplate = false
 ): Promise<void> {
+  const fileName = title || "presentation";
+
+  if (useTemplate) {
+    return exportWithTemplate(slides, fileName);
+  }
+
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = "AI Slide Builder";
