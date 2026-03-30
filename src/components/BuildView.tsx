@@ -232,6 +232,10 @@ ${data.substring(0, 1200)}`;
           (parsed.recommendedTheme && THEMES[parsed.recommendedTheme]) ||
           THEMES.neonGaming;
 
+      if (typeof window !== "undefined") {
+        console.log("[DEBUG] useTemplate:", useTemplate, "theme:", finalTheme.id, "bg:", finalTheme.bg);
+      }
+
       onProgressChange(100);
       onStatusChange("완료!");
       setTimeout(() => onGenerated(allSlides, finalTheme, srcs), 300);
