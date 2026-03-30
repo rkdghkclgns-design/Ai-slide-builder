@@ -94,18 +94,11 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
-    // 프론트엔드에서 직접 Supabase Edge Function 호출 (Vercel 프록시 타임아웃 우회)
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/image-gen`, {
+    const res = await fetch("/api/images", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
     const json = await res.json();
