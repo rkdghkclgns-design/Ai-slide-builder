@@ -226,10 +226,11 @@ ${data.substring(0, 1200)}`;
         );
       }
 
-      const finalTheme =
-        chosenTheme ||
-        (parsed.recommendedTheme && THEMES[parsed.recommendedTheme]) ||
-        THEMES.neonGaming;
+      const finalTheme = useTemplate
+        ? THEMES.pptxTemplate
+        : chosenTheme ||
+          (parsed.recommendedTheme && THEMES[parsed.recommendedTheme]) ||
+          THEMES.neonGaming;
 
       onProgressChange(100);
       onStatusChange("완료!");
