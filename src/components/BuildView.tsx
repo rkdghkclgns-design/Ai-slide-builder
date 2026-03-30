@@ -136,7 +136,14 @@ export default function BuildView({
       const n = Math.min(sc, 8);
       const slidePrompt = `아래 내용으로 ${n}개 슬라이드를 만들어주세요.
 첫 슬라이드: type "cover", 마지막: type "closing", 나머지: "content" 또는 "quote".
-${useImages ? '각 content/quote 슬라이드에 반드시 "imagePrompt" 필드를 추가하세요. 값은 영문으로 된 구체적인 이미지 설명입니다. 예: "futuristic AI robot in office"' : ""}
+${useImages ? `각 슬라이드에 반드시 "imagePrompt" 필드를 추가하세요.
+imagePrompt 작성 규칙:
+- 반드시 영문으로 작성
+- 슬라이드의 핵심 내용과 직접적으로 관련된 구체적 장면 묘사
+- "professional photograph of..." 또는 "illustration showing..." 으로 시작
+- 슬라이드 제목+설명의 핵심 키워드를 반드시 포함
+- 40-80단어로 상세하게 작성
+예: "professional photograph of a diverse team of engineers collaborating around a holographic AI interface in a modern glass office, with data visualizations floating in the air, warm lighting"` : ""}
 JSON만 출력: {"slides":[{"type":"cover","title":"제목","subtitle":"설명"},{"type":"content","title":"제목","description":"내용","items":[{"title":"항목","desc":"설명"}]},{"type":"closing","title":"감사합니다"}]}
 
 내용:
@@ -179,9 +186,20 @@ ${data.substring(0, 1200)}`;
         onProgressChange(85);
 
         const imagePromises = allSlides.map((s) => {
-          const prompt = s.imagePrompt
-            || (s.title ? `professional presentation slide about ${s.title}` : null)
-            || "modern abstract presentation visual";
+          if (s.imagePrompt) return generateImage(s.imagePrompt);
+          // 슬라이드 내용에서 상세한 이미지 프롬프트 구성
+          const context = [
+            s.title,
+            s.description,
+            ...(Array.isArray(s.items)
+              ? s.items.map((it) => (typeof it === "string" ? it : it.title))
+              : []),
+          ]
+            .filter(Boolean)
+            .join(", ");
+          const prompt = context
+            ? `professional photograph related to: ${context}. Style: clean, modern, high quality`
+            : "modern abstract business presentation visual";
           return generateImage(prompt);
         });
 

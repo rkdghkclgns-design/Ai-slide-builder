@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, BookOpen, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Save, Download } from "lucide-react";
 import { SlideData, Theme, Source, Template } from "@/lib/types";
+import { exportToPptx } from "@/lib/export-pptx";
 import Slide from "./Slide";
 import SourcesModal from "./SourcesModal";
 import SaveModal from "./SaveModal";
@@ -25,6 +26,7 @@ export default function SlidesView({
   const [cur, setCur] = useState(0);
   const [showSrc, setShowSrc] = useState(false);
   const [showSave, setShowSave] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const isLt = t.lt === true;
   const pct = ((cur + 1) / slides.length) * 100;
@@ -120,6 +122,24 @@ export default function SlidesView({
           >
             <Save className="h-3.5 w-3.5" />
             서식 저장
+          </button>
+          <button
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await exportToPptx(slides, t, "presentation");
+              } catch {
+                // silently fail
+              } finally {
+                setExporting(false);
+              }
+            }}
+            disabled={exporting}
+            className="flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium backdrop-blur-md transition-all hover:scale-105"
+            style={{ borderColor: t.cd, background: t.cb, color: t.tm }}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "내보내는 중..." : "PPTX 다운로드"}
           </button>
         </div>
         <div className="flex w-44 items-center gap-3">
