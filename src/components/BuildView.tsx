@@ -42,6 +42,8 @@ interface BuildViewProps {
   onError: (error: string) => void;
   templates: Template[];
   onTemplatesChange: (templates: Template[]) => void;
+  useTemplate: boolean;
+  onUseTemplateChange: (v: boolean) => void;
 }
 
 export default function BuildView({
@@ -52,6 +54,8 @@ export default function BuildView({
   onError,
   templates,
   onTemplatesChange,
+  useTemplate,
+  onUseTemplateChange,
 }: BuildViewProps) {
   const [mode, setMode] = useState<InputMode>("command");
   const [cmd, setCmd] = useState("");
@@ -505,6 +509,43 @@ ${data.substring(0, 1200)}`;
           {useImages && (
             <p className="mt-2 text-xs text-green-400/50">
               각 슬라이드에 AI 생성 이미지가 포함됩니다
+            </p>
+          )}
+        </div>
+
+        {/* PPTX Template */}
+        <div
+          className="rounded-3xl border p-5 backdrop-blur-xl transition-colors"
+          style={{
+            borderColor: useTemplate
+              ? "rgba(79,129,189,.2)"
+              : "rgba(255,255,255,.08)",
+            background: useTemplate
+              ? "rgba(79,129,189,.05)"
+              : "rgba(255,255,255,.03)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-base">📄</span>
+            <h3 className="flex-1 text-sm font-semibold text-white">
+              PPTX 템플릿 서식
+            </h3>
+            <button
+              onClick={() => onUseTemplateChange(!useTemplate)}
+              className="relative h-7 w-14 rounded-full transition-all"
+              style={{
+                background: useTemplate ? "#4F81BD" : "rgba(255,255,255,.1)",
+              }}
+            >
+              <div
+                className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-lg transition-all"
+                style={{ left: useTemplate ? 30 : 2 }}
+              />
+            </button>
+          </div>
+          {useTemplate && (
+            <p className="mt-2 text-xs text-blue-300/50">
+              PPTX 다운로드 시 슬라이드 양식 템플릿(Navy/맑은고딕) 서식이 적용됩니다
             </p>
           )}
         </div>

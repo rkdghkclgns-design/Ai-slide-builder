@@ -1,8 +1,8 @@
 import PptxGenJS from "pptxgenjs";
 import { SlideData, Theme } from "./types";
+import { DEFAULT_TEMPLATE, PptxTemplatePreset } from "./pptx-templates";
 
 function hexColor(rgba: string): string {
-  // Extract hex from various formats
   const hex = rgba.match(/#([A-Fa-f0-9]{6})/)?.[1];
   if (hex) return hex;
   const rgb = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -14,141 +14,190 @@ function hexColor(rgba: string): string {
   return "FFFFFF";
 }
 
+interface StyleSet {
+  bgColor: string;
+  titleColor: string;
+  subColor: string;
+  accentColor: string;
+  accent2Color: string;
+  cardBg: string;
+  fontFace: string;
+  coverBg: string;
+  closingBg: string;
+  closingTitle: string;
+  closingSub: string;
+  contentBg: string;
+}
+
+function buildStyles(theme: Theme, useTemplate: boolean): StyleSet {
+  if (useTemplate) {
+    const t = DEFAULT_TEMPLATE;
+    return {
+      bgColor: t.content.bgColor,
+      titleColor: t.content.titleColor,
+      subColor: t.content.textColor,
+      accentColor: t.content.accentColor,
+      accent2Color: "C0504D",
+      cardBg: t.content.cardBg,
+      fontFace: t.fontFace,
+      coverBg: t.cover.bgColor,
+      closingBg: t.closing.bgColor,
+      closingTitle: t.closing.titleColor,
+      closingSub: t.closing.subtitleColor,
+      contentBg: t.content.bgColor,
+    };
+  }
+  return {
+    bgColor: hexColor(theme.bg),
+    titleColor: hexColor(theme.tp),
+    subColor: hexColor(theme.ts),
+    accentColor: hexColor(theme.a1),
+    accent2Color: hexColor(theme.a2),
+    cardBg: theme.lt ? "F5F5F5" : "1A1A2E",
+    fontFace: "Arial",
+    coverBg: hexColor(theme.bg),
+    closingBg: hexColor(theme.bg),
+    closingTitle: hexColor(theme.tp),
+    closingSub: hexColor(theme.ts),
+    contentBg: hexColor(theme.bg),
+  };
+}
+
 export async function exportToPptx(
   slides: SlideData[],
   theme: Theme,
-  title?: string
+  title?: string,
+  useTemplate = false
 ): Promise<void> {
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = "AI Slide Builder";
   pptx.title = title || "AI Generated Presentation";
 
-  const bgColor = hexColor(theme.bg);
-  const textColor = hexColor(theme.tp);
-  const subColor = hexColor(theme.ts);
-  const a1 = hexColor(theme.a1);
-  const a2 = hexColor(theme.a2);
-  const cardBg = theme.lt ? "F5F5F5" : "1A1A2E";
+  const st = buildStyles(theme, useTemplate);
 
   for (const s of slides) {
     const slide = pptx.addSlide();
-    slide.background = { color: bgColor };
     const type = s.type || "content";
 
+    // --- COVER ---
     if (type === "cover") {
+      slide.background = { color: st.coverBg };
+      if (useTemplate) {
+        // 왼쪽 액센트 바
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: 0, w: 0.15, h: "100%",
+          fill: { color: st.accentColor },
+        });
+      }
       if (s.badge) {
         slide.addText(s.badge, {
-          x: 1,
-          y: 1.5,
-          w: 3,
-          fontSize: 10,
-          fontFace: "Arial",
-          color: a1,
+          x: 1, y: 1.5, w: 3,
+          fontSize: 10, fontFace: st.fontFace,
+          color: useTemplate ? st.closingSub : st.accentColor,
           bold: true,
         });
       }
       slide.addText(
         [
-          { text: s.title || "", options: { fontSize: 44, bold: true, color: textColor, breakLine: true } },
+          { text: s.title || "", options: { fontSize: 44, bold: true, color: useTemplate ? "FFFFFF" : st.titleColor, breakLine: true } },
           ...(s.titleGrad
-            ? [{ text: s.titleGrad, options: { fontSize: 44, bold: true, color: a1, breakLine: true } }]
+            ? [{ text: s.titleGrad, options: { fontSize: 44, bold: true, color: st.accentColor, breakLine: true } }]
             : []),
           ...(s.subtitle
-            ? [{ text: "\n" + s.subtitle, options: { fontSize: 18, color: subColor } }]
+            ? [{ text: "\n" + s.subtitle, options: { fontSize: 18, color: useTemplate ? st.closingSub : st.subColor } }]
             : []),
         ],
-        { x: 1, y: 2, w: 8, h: 4, valign: "middle" }
+        { x: 1, y: 1.8, w: 8, h: 4, valign: "middle", fontFace: st.fontFace }
       );
-      if (s.imageUrl && !s.imageUrl.startsWith("data:")) {
-        slide.addImage({ path: s.imageUrl, x: 9, y: 1, w: 3.5, h: 3.5 });
+    }
+
+    // --- CLOSING ---
+    else if (type === "closing") {
+      slide.background = { color: st.closingBg };
+      if (useTemplate) {
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: 0, w: 0.15, h: "100%",
+          fill: { color: st.accentColor },
+        });
       }
-    } else if (type === "closing") {
       slide.addText(
         [
-          { text: s.title || "감사합니다", options: { fontSize: 48, bold: true, color: textColor, breakLine: true } },
+          { text: s.title || "감사합니다", options: { fontSize: 48, bold: true, color: st.closingTitle, breakLine: true } },
           ...(s.titleGrad
-            ? [{ text: s.titleGrad, options: { fontSize: 48, bold: true, color: a2 } }]
+            ? [{ text: s.titleGrad, options: { fontSize: 48, bold: true, color: st.accentColor } }]
             : []),
           ...(s.subtitle
-            ? [{ text: "\n" + s.subtitle, options: { fontSize: 18, color: subColor } }]
+            ? [{ text: "\n" + s.subtitle, options: { fontSize: 18, color: st.closingSub } }]
             : []),
         ],
-        { x: 1, y: 2.5, w: 11, h: 3, align: "center", valign: "middle" }
+        { x: 1, y: 2.5, w: 11, h: 3, align: "center", valign: "middle", fontFace: st.fontFace }
       );
-    } else if (type === "quote") {
+    }
+
+    // --- QUOTE ---
+    else if (type === "quote") {
+      slide.background = { color: st.contentBg };
+      if (useTemplate) {
+        // 상단 액센트 라인
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: 0, w: "100%", h: 0.08,
+          fill: { color: st.accentColor },
+        });
+      }
       if (s.sectionLabel) {
         slide.addText(s.sectionLabel, {
-          x: 1,
-          y: 0.8,
-          w: 5,
-          fontSize: 10,
-          fontFace: "Arial",
-          color: a1,
-          bold: true,
+          x: 1, y: 0.8, w: 5,
+          fontSize: 10, fontFace: st.fontFace,
+          color: st.accentColor, bold: true,
         });
       }
       slide.addText(s.title || "", {
-        x: 1,
-        y: 1.5,
-        w: 11,
-        fontSize: 32,
-        fontFace: "Arial",
-        bold: true,
-        color: textColor,
-        align: "center",
+        x: 1, y: 1.5, w: 11,
+        fontSize: 32, fontFace: st.fontFace,
+        bold: true, color: st.titleColor, align: "center",
       });
-      slide.addText(`"${s.quote || ""}"`, {
-        x: 1.5,
-        y: 3,
-        w: 10,
-        fontSize: 18,
-        fontFace: "Arial",
-        italic: true,
-        color: subColor,
-        align: "center",
+      slide.addText(`\u201C${s.quote || ""}\u201D`, {
+        x: 1.5, y: 3, w: 10,
+        fontSize: 18, fontFace: st.fontFace,
+        italic: true, color: st.subColor, align: "center",
       });
       if (s.author) {
-        slide.addText(`— ${s.author}`, {
-          x: 1.5,
-          y: 4.5,
-          w: 10,
-          fontSize: 12,
-          color: subColor,
-          align: "center",
+        slide.addText(`\u2014 ${s.author}`, {
+          x: 1.5, y: 4.5, w: 10,
+          fontSize: 12, fontFace: st.fontFace,
+          color: st.subColor, align: "center",
         });
       }
-    } else {
-      // content / comparison
+    }
+
+    // --- CONTENT ---
+    else {
+      slide.background = { color: st.contentBg };
+      if (useTemplate) {
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0, y: 0, w: "100%", h: 0.08,
+          fill: { color: st.accentColor },
+        });
+      }
       if (s.sectionLabel) {
         slide.addText(s.sectionLabel, {
-          x: 0.8,
-          y: 0.5,
-          w: 5,
-          fontSize: 10,
-          fontFace: "Arial",
-          color: a1,
-          bold: true,
+          x: 0.8, y: 0.5, w: 5,
+          fontSize: 10, fontFace: st.fontFace,
+          color: st.accentColor, bold: true,
         });
       }
       slide.addText(s.title || "Slide", {
-        x: 0.8,
-        y: 0.9,
-        w: 8,
-        fontSize: 28,
-        fontFace: "Arial",
-        bold: true,
-        color: textColor,
+        x: 0.8, y: 0.9, w: 8,
+        fontSize: 28, fontFace: st.fontFace,
+        bold: true, color: st.titleColor,
       });
 
       if (s.description) {
         slide.addText(s.description, {
-          x: 0.8,
-          y: 1.8,
-          w: 7,
-          fontSize: 14,
-          color: subColor,
-          lineSpacing: 22,
+          x: 0.8, y: 1.8, w: 7,
+          fontSize: 14, fontFace: st.fontFace,
+          color: st.subColor, lineSpacing: 22,
         });
       }
 
@@ -166,33 +215,20 @@ export async function exportToPptx(
           const itemDesc = typeof item !== "string" ? item.desc : undefined;
 
           slide.addShape(pptx.ShapeType.roundRect, {
-            x,
-            y,
-            w: cardW,
-            h: 1.5,
-            fill: { color: cardBg },
+            x, y, w: cardW, h: 1.5,
+            fill: { color: st.cardBg },
             rectRadius: 0.1,
+            ...(useTemplate ? { line: { color: st.accentColor, width: 0.5 } } : {}),
           });
           slide.addText(
             [
-              { text: itemTitle, options: { fontSize: 13, bold: true, color: textColor, breakLine: true } },
+              { text: itemTitle, options: { fontSize: 13, bold: true, color: st.titleColor, breakLine: true } },
               ...(itemDesc
-                ? [{ text: itemDesc, options: { fontSize: 11, color: subColor } }]
+                ? [{ text: itemDesc, options: { fontSize: 11, color: st.subColor } }]
                 : []),
             ],
-            { x: x + 0.2, y: y + 0.2, w: cardW - 0.4, h: 1.1 }
+            { x: x + 0.2, y: y + 0.2, w: cardW - 0.4, h: 1.1, fontFace: st.fontFace }
           );
-        });
-      }
-
-      if (s.imageUrl && !s.imageUrl.startsWith("data:")) {
-        slide.addImage({
-          path: s.imageUrl,
-          x: 8.5,
-          y: 1.8,
-          w: 4,
-          h: 2.5,
-          rounding: true,
         });
       }
     }

@@ -17,6 +17,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [useTemplate, setUseTemplate] = useState(false);
 
   useEffect(() => {
     const saved = storageGet<Template[]>("slide-tpls");
@@ -46,6 +47,7 @@ export default function Home() {
         sources={sources}
         onBack={() => setView("build")}
         onTemplatesSaved={setTemplates}
+        useTemplate={useTemplate}
       />
     );
   }
@@ -69,6 +71,8 @@ export default function Home() {
       onError={setError}
       templates={templates}
       onTemplatesChange={setTemplates}
+      useTemplate={useTemplate}
+      onUseTemplateChange={setUseTemplate}
     />
   );
 }

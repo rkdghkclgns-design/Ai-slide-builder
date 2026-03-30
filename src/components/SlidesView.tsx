@@ -14,6 +14,7 @@ interface SlidesViewProps {
   sources: Source[];
   onBack: () => void;
   onTemplatesSaved: (templates: Template[]) => void;
+  useTemplate: boolean;
 }
 
 export default function SlidesView({
@@ -22,6 +23,7 @@ export default function SlidesView({
   sources,
   onBack,
   onTemplatesSaved,
+  useTemplate,
 }: SlidesViewProps) {
   const [cur, setCur] = useState(0);
   const [showSrc, setShowSrc] = useState(false);
@@ -127,7 +129,7 @@ export default function SlidesView({
             onClick={async () => {
               setExporting(true);
               try {
-                await exportToPptx(slides, t, "presentation");
+                await exportToPptx(slides, t, "presentation", useTemplate);
               } catch {
                 // silently fail
               } finally {
