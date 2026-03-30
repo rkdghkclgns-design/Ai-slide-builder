@@ -94,9 +94,16 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
-export function makeImageUrl(_prompt: string, index: number): string {
-  // Lorem Picsum — 무료, 안정적, 고품질 랜덤 이미지
-  // 프롬프트 해시 기반 시드로 같은 프롬프트에 같은 이미지
-  const seed = (index + 1) * 47 + _prompt.length;
-  return `https://picsum.photos/seed/${seed}/800/450`;
+export async function generateImage(prompt: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    const json = await res.json();
+    return json.url || null;
+  } catch {
+    return null;
+  }
 }

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { THEMES } from "@/lib/themes";
 import { storageGet, storageSet } from "@/lib/storage";
-import { ask, pullText, pullSources, tryParse, makeImageUrl } from "@/lib/api";
+import { ask, pullText, pullSources, tryParse, generateImage } from "@/lib/api";
 import {
   InputMode,
   SlideData,
@@ -175,11 +175,21 @@ ${data.substring(0, 1200)}`;
       }
 
       if (useImages) {
-        allSlides = allSlides.map((s, i) => {
+        onStatusChange("AI 이미지 생성 중...");
+        onProgressChange(85);
+
+        const imagePromises = allSlides.map((s) => {
           const prompt = s.imagePrompt
             || (s.title ? `professional presentation slide about ${s.title}` : null)
-            || `modern presentation visual slide ${i + 1}`;
-          return { ...s, imageUrl: makeImageUrl(prompt, i) };
+            || "modern abstract presentation visual";
+          return generateImage(prompt);
+        });
+
+        const imageResults = await Promise.allSettled(imagePromises);
+        allSlides = allSlides.map((s, i) => {
+          const result = imageResults[i];
+          const url = result.status === "fulfilled" ? result.value : null;
+          return url ? { ...s, imageUrl: url } : s;
         });
       }
 
