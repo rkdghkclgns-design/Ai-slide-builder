@@ -95,5 +95,5 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
 }
 
 export function makeImageUrl(prompt: string, index: number): string {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&nologo=true&seed=${index * 97 + 7}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&nologo=true&enhance=true&seed=${index * 97 + 7}&t=${Date.now()}`;
 }

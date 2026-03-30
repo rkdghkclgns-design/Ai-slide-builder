@@ -176,9 +176,9 @@ ${data.substring(0, 1200)}`;
 
       if (useImages) {
         allSlides = allSlides.map((s, i) => {
-          if (s.type === "cover" || s.type === "closing") return s;
-          const prompt =
-            s.imagePrompt || s.title || `slide ${i + 1} presentation`;
+          const prompt = s.imagePrompt
+            || (s.title ? `professional presentation slide about ${s.title}` : null)
+            || `modern presentation visual slide ${i + 1}`;
           return { ...s, imageUrl: makeImageUrl(prompt, i) };
         });
       }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ImageIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ImageIcon, AlertCircle } from "lucide-react";
 
 interface SlideImageProps {
   src?: string;
@@ -12,8 +12,36 @@ interface SlideImageProps {
 export default function SlideImage({ src, tm, cb }: SlideImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (!src || errored) return null;
+  useEffect(() => {
+    if (!src) return;
+    setLoaded(false);
+    setErrored(false);
+    setTimedOut(false);
+
+    const timer = setTimeout(() => {
+      if (!loaded) setTimedOut(true);
+    }, 20000);
+
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  if (!src) return null;
+
+  if (errored || timedOut) {
+    return (
+      <div
+        className="mt-4 flex items-center justify-center gap-2 rounded-2xl py-8"
+        style={{ background: cb }}
+      >
+        <AlertCircle className="h-4 w-4" style={{ color: tm }} />
+        <span className="text-xs" style={{ color: tm }}>
+          이미지를 불러올 수 없습니다
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative mt-4 max-h-56 overflow-hidden rounded-2xl">
