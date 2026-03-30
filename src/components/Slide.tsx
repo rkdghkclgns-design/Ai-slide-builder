@@ -95,6 +95,8 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
   const isDark = ["cover", "closing", "intro", "section", "summary"].includes(type);
   const items = s.items || [];
   const getItem = (i: number) => { const it = items[i]; return it ? (typeof it === "string" ? { title: it, desc: undefined } : { title: it.title, desc: it.desc }) : null; };
+  const hasImage = !!s.imageUrl;
+  const imgProps = { src: s.imageUrl, tm: isDark ? "rgba(255,255,255,.3)" : "#999", cb: isDark ? "rgba(255,255,255,.05)" : "#e8ecf0" };
 
   return (
     <TplShell dark={isDark} idx={idx}>
@@ -112,6 +114,7 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.blue }}>Introduction</span>
           <h2 className="text-4xl font-bold" style={{ color: "#fff" }}>{s.title}</h2>
           {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: "rgba(255,255,255,.65)" }}>{s.description}</p>}
+          {hasImage && <SlideImage {...imgProps} />}
         </div>
       )}
 
@@ -166,12 +169,17 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.red }}>Case Study</span>
           <h2 className="text-3xl font-bold" style={{ color: C.navy }}>{s.title}</h2>
           <div style={{ width: 60, height: 3, background: C.red, borderRadius: 2 }} />
-          {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: "#444" }}>{s.description}</p>}
-          {items.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={C.red} /> : null; })}
+          <div className={hasImage ? "grid gap-6 md:grid-cols-2" : ""}>
+            <div>
+              {s.description && <p className="text-base leading-relaxed" style={{ color: "#444" }}>{s.description}</p>}
+              {items.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={C.red} /> : null; })}
+                </div>
+              )}
             </div>
-          )}
+            {hasImage && <SlideImage {...imgProps} />}
+          </div>
         </div>
       )}
 
@@ -214,6 +222,7 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
           <TplTitle label={s.sectionLabel}>{s.title}</TplTitle>
           {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: "#444" }}>{s.description}</p>}
           {type === "quote" && s.quote && <p className="text-lg italic" style={{ color: "#555" }}>&ldquo;{s.quote}&rdquo;</p>}
+          {hasImage && <SlideImage {...imgProps} />}
           {items.length > 0 && (
             <div className={items.length <= 3 ? "grid gap-4 md:grid-cols-3" : "grid gap-4 md:grid-cols-2"}>
               {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} /> : null; })}

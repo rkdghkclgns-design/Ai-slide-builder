@@ -102,11 +102,21 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
+const _SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const _SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
-    const res = await fetch("/api/images", {
+    // 프론트엔드에서 Supabase Edge Function 직접 호출 (Vercel 10초 타임아웃 우회)
+    const url = _SB_URL
+      ? `${_SB_URL}/functions/v1/image-gen`
+      : "/api/images"; // 폴백: Vercel 프록시
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (_SB_KEY) headers["Authorization"] = `Bearer ${_SB_KEY}`;
+
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ prompt }),
     });
     const json = await res.json();
