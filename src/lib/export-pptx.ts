@@ -138,15 +138,14 @@ function buildTemplateSlide(
       });
     }
   }
-  // 이미지 추가 (data:image/... base64 지원)
-  if (s.imageUrl && !isDark) {
-    if (s.imageUrl.startsWith("data:")) {
-      slide.addImage({ data: s.imageUrl, x: 8, y: 4, w: 4.2, h: 2.5, rounding: true });
-    } else {
-      try {
-        slide.addImage({ path: s.imageUrl, x: 8, y: 4, w: 4.2, h: 2.5, rounding: true });
-      } catch { /* skip invalid URLs */ }
-    }
+  // 이미지 추가 — 타입별 위치 지정, 겹침 방지
+  const skipImageTypes = ["twoColumn", "table", "threeCards", "objectives", "cover", "closing"];
+  if (s.imageUrl && !isDark && !skipImageTypes.includes(type)) {
+    const imgData = s.imageUrl.startsWith("data:") ? { data: s.imageUrl } : { path: s.imageUrl };
+    try {
+      // content/caseStudy: 우측 하단, 카드 아래
+      slide.addImage({ ...imgData, x: 8.5, y: 4.5, w: 3.5, h: 2, rounding: true });
+    } catch { /* skip */ }
   }
 
   addPageNum(slide, idx, total, isDark);
