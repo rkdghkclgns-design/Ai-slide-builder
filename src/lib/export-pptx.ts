@@ -242,27 +242,6 @@ function buildDefaultSlide(
   }
 }
 
-/* ═══ 템플릿 모드: 원본 PPTX에서 텍스트만 교체 ═══ */
-async function exportWithOriginalTemplate(
-  slides: SlideData[],
-  fileName: string
-): Promise<void> {
-  const res = await fetch("/api/export-pptx", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slides }),
-  });
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  if (!json.url) throw new Error("PPTX 생성 실패");
-
-  // 다운로드 URL → 브라우저 다운로드 트리거
-  const a = document.createElement("a");
-  a.href = json.url;
-  a.download = `${fileName}.pptx`;
-  a.click();
-}
-
 /* ═══ 원본 PPTX 템플릿 사용 ═══ */
 async function exportWithOriginalTemplate(
   slides: SlideData[],
