@@ -263,6 +263,26 @@ async function exportWithOriginalTemplate(
   a.click();
 }
 
+/* ═══ 원본 PPTX 템플릿 사용 ═══ */
+async function exportWithOriginalTemplate(
+  slides: SlideData[],
+  fileName: string
+): Promise<void> {
+  const res = await fetch("/api/export-pptx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slides }),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  if (!json.url) throw new Error("PPTX 생성 실패");
+
+  const a = document.createElement("a");
+  a.href = json.url;
+  a.download = `${fileName}.pptx`;
+  a.click();
+}
+
 /* ═══ PUBLIC: PPTX 내보내기 ═══ */
 export async function exportToPptx(
   slides: SlideData[],
@@ -271,18 +291,17 @@ export async function exportToPptx(
   useTemplate = false
 ): Promise<void> {
   const fileName = title || "presentation";
+
+  if (useTemplate) {
+    // 템플릿 ON → 원본 PPTX 파일 사용 (디자인 100% 유지, 텍스트만 교체)
+    return exportWithOriginalTemplate(slides, fileName);
+  }
+
+  // 템플릿 OFF → pptxgenjs로 템플릿 스타일 생성
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = "AI Slide Builder";
   pptx.title = fileName;
-
-  if (useTemplate) {
-    // 템플릿 ON → pptxgenjs로 템플릿 스타일 + AI 콘텐츠 모두 포함
-    slides.forEach((s, i) => buildTemplateSlide(pptx, s, i, slides.length));
-  } else {
-    // 템플릿 OFF → 웹 테마 색상 기반
-    slides.forEach((s) => buildDefaultSlide(pptx, s, theme));
-  }
-
+  slides.forEach((s, i) => buildTemplateSlide(pptx, s, i, slides.length));
   await pptx.writeFile({ fileName: `${fileName}.pptx` });
 }
