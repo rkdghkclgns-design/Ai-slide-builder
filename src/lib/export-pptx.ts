@@ -247,12 +247,21 @@ async function exportWithOriginalTemplate(
   slides: SlideData[],
   fileName: string
 ): Promise<void> {
-  // 이미지 데이터(base64) 제거 — 텍스트만 전송 (413 방지)
-  const textOnly = slides.map(({ imageUrl, imagePrompt, ...rest }) => rest);
+  // base64 이미지 → Supabase Storage에 업로드 → URL로 변환 (413 방지)
+  const { uploadImageToStorage } = await import("./api");
+  const uploadedSlides = await Promise.all(
+    slides.map(async (s) => {
+      if (s.imageUrl?.startsWith("data:")) {
+        const url = await uploadImageToStorage(s.imageUrl);
+        return { ...s, imageUrl: url || undefined, imagePrompt: undefined };
+      }
+      return { ...s, imagePrompt: undefined };
+    })
+  );
   const res = await fetch("/api/export-pptx", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slides: textOnly }),
+    body: JSON.stringify({ slides: uploadedSlides }),
   });
   const json = await res.json();
   if (json.error) throw new Error(json.error);

@@ -102,8 +102,37 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
-const _SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const _SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+export const _SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+export const _SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+/** base64 data URL → Supabase Storage에 업로드 → public URL 반환 */
+export async function uploadImageToStorage(dataUrl: string): Promise<string | null> {
+  if (!_SB_URL || !_SB_KEY || !dataUrl.startsWith("data:")) return null;
+  try {
+    const [meta, base64] = dataUrl.split(",");
+    const mime = meta.match(/data:([^;]+)/)?.[1] || "image/png";
+    const ext = mime.split("/")[1] || "png";
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime });
+
+    const fileName = `exports/img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const res = await fetch(`${_SB_URL}/storage/v1/object/templates/${fileName}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${_SB_KEY}`,
+        "Content-Type": mime,
+        "x-upsert": "true",
+      },
+      body: blob,
+    });
+    if (!res.ok) return null;
+    return `${_SB_URL}/storage/v1/object/public/templates/${fileName}`;
+  } catch {
+    return null;
+  }
+}
 
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
