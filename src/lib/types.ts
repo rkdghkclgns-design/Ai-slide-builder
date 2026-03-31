@@ -44,6 +44,10 @@ export interface SlideData {
     | "content"
     | "quote"
     | "comparison"
+    | "example"
+    | "imageText"
+    | "caseDetail"
+    | "keyValue"
     | "closing";
   title?: string;
   titleGrad?: string;

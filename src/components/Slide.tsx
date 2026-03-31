@@ -54,27 +54,25 @@ function GridOverlay({ theme }: { theme: Theme }) {
   );
 }
 
-/* ═══ 템플릿 공통 요소 ═══ */
-const C = { navy: "#1a2744", blue: "#4F81BD", red: "#C0504D", green: "#9BBB59" };
-const TF = "'맑은 고딕','Malgun Gothic',sans-serif";
+/* ═══ 원본 PPTX 정확한 색상 ═══ */
+const C = { dark: "#0F172A", white: "#F8FAFC", cyan: "#06B6D4", sky: "#38BDF8", red: "#EF4444", gray: "#94A3B8", lgray: "#E2E8F0", border: "#CBD5E1" };
+const TF = "'맑은 고딕','Malgun Gothic','Pretendard',sans-serif";
 
 function TplShell({ dark, children, idx }: { dark: boolean; children: React.ReactNode; idx: number }) {
   return (
-    <div className="relative flex h-full flex-col" style={{ fontFamily: TF, background: dark ? C.navy : "#f5f7fa" }}>
-      {dark && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/template-bg.png)", opacity: 0.9 }} />}
-      <div className="absolute left-0 top-0 h-full" style={{ width: 6, background: C.blue }} />
-      {!dark && <div className="absolute left-0 right-0 top-0" style={{ height: 4, background: C.blue }} />}
-      <div className="relative z-10 flex flex-1 flex-col justify-center px-16">{children}</div>
-      <div className="absolute bottom-4 right-6 text-xs" style={{ color: dark ? "rgba(255,255,255,.3)" : "#999" }}>{idx + 1}</div>
+    <div className="relative flex h-full flex-col" style={{ fontFamily: TF, background: dark ? C.dark : C.white }}>
+      {dark && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/template-bg.png)", opacity: 0.95 }} />}
+      <div className="relative z-10 flex flex-1 flex-col justify-center px-16 py-12">{children}</div>
+      <div className="absolute bottom-4 right-6 text-xs" style={{ color: dark ? "rgba(255,255,255,.25)" : C.gray }}>{idx + 1}</div>
     </div>
   );
 }
 
-function TplCard({ title, desc, accent = C.blue }: { title: string; desc?: string; accent?: string }) {
+function TplCard({ title, desc, accent = C.cyan }: { title: string; desc?: string; accent?: string }) {
   return (
-    <div className="rounded-2xl border p-5" style={{ background: "#fff", borderColor: "#d6e4f0", borderTop: `3px solid ${accent}` }}>
-      <h4 className="mb-1.5 text-sm font-bold" style={{ color: C.navy }}>{title}</h4>
-      {desc && <p className="text-xs leading-relaxed" style={{ color: "#666" }}>{desc}</p>}
+    <div className="rounded-2xl border p-5" style={{ background: C.lgray, borderColor: C.border, borderTop: `3px solid ${accent}` }}>
+      <h4 className="mb-1.5 text-sm font-bold" style={{ color: C.dark }}>{title}</h4>
+      {desc && <p className="text-xs leading-relaxed" style={{ color: C.gray }}>{desc}</p>}
     </div>
   );
 }
@@ -82,9 +80,9 @@ function TplCard({ title, desc, accent = C.blue }: { title: string; desc?: strin
 function TplTitle({ children, label }: { children: React.ReactNode; label?: string }) {
   return (
     <div className="space-y-2">
-      {label && <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.blue }}>{label}</span>}
-      <h2 className="text-3xl font-bold md:text-4xl" style={{ color: C.navy }}>{children}</h2>
-      <div style={{ width: 80, height: 3, background: C.blue, borderRadius: 2 }} />
+      {label && <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.cyan }}>{label}</span>}
+      <h2 className="text-3xl font-bold md:text-4xl" style={{ color: C.dark }}>{children}</h2>
+      <div style={{ width: 80, height: 3, background: C.cyan, borderRadius: 2 }} />
     </div>
   );
 }
@@ -100,113 +98,112 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
 
   return (
     <TplShell dark={isDark} idx={idx}>
-      {/* ── 커버 ── */}
+      {/* ── 커버 (슬라이드1) ── */}
       {type === "cover" && (
-        <div className="animate-slide-up space-y-4 text-center">
-          <h1 className="text-5xl font-bold leading-tight md:text-6xl" style={{ color: "#fff" }}>{s.title}</h1>
-          {s.subtitle && <p className="mx-auto max-w-2xl text-lg" style={{ color: "rgba(255,255,255,.6)" }}>{s.subtitle}</p>}
+        <div className="animate-slide-up space-y-5 text-center">
+          <h1 className="text-5xl font-bold leading-tight md:text-6xl" style={{ color: C.white }}>{s.title}</h1>
+          {s.subtitle && <p className="mx-auto max-w-2xl text-lg" style={{ color: C.gray }}>{s.subtitle}</p>}
+          <div className="mx-auto" style={{ width: 80, height: 3, background: C.cyan, borderRadius: 2 }} />
         </div>
       )}
 
-      {/* ── 소개 (다크) ── */}
+      {/* ── 소개 (슬라이드2 다크) ── */}
       {type === "intro" && (
-        <div className="animate-slide-up space-y-5">
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.blue }}>Introduction</span>
-          <h2 className="text-4xl font-bold" style={{ color: "#fff" }}>{s.title}</h2>
-          {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: "rgba(255,255,255,.65)" }}>{s.description}</p>}
-          {hasImage && <SlideImage {...imgProps} />}
+        <div className="animate-slide-up space-y-5 text-center">
+          <span className="text-xs font-bold uppercase tracking-[.25em]" style={{ color: C.gray }}>Introduction</span>
+          <div className="mx-auto" style={{ width: 80, height: 3, background: C.sky, borderRadius: 2 }} />
+          <h2 className="text-4xl font-bold" style={{ color: C.white }}>{s.title}</h2>
+          {s.description && <p className="mx-auto max-w-3xl text-base leading-relaxed" style={{ color: C.gray }}>{s.description}</p>}
         </div>
       )}
 
-      {/* ── 목표/요약 (3카드 밝은) ── */}
+      {/* ── 목표 (슬라이드3 밝은) ── */}
       {type === "objectives" && (
         <div className="animate-slide-up space-y-5">
           <TplTitle label={s.sectionLabel}>{s.title}</TplTitle>
-          {s.description && <p className="text-sm" style={{ color: "#555" }}>{s.description}</p>}
+          {s.description && <p className="text-sm" style={{ color: C.gray }}>{s.description}</p>}
           <div className="grid gap-4 md:grid-cols-3">
-            {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={[C.blue, C.red, C.green][i % 3]} /> : null; })}
+            {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={[C.cyan, C.sky, C.red][i % 3]} /> : null; })}
           </div>
         </div>
       )}
 
-      {/* ── 섹션 구분 (다크) ── */}
+      {/* ── 섹션 구분 (슬라이드4 다크) ── */}
       {type === "section" && (
         <div className="animate-slide-up space-y-3 text-center">
-          <span className="text-lg font-bold" style={{ color: C.blue }}>Part {s.partNumber || idx}</span>
-          <h1 className="text-5xl font-bold" style={{ color: "#fff" }}>{s.title}</h1>
-          {s.subtitle && <p className="text-lg" style={{ color: "rgba(255,255,255,.5)" }}>{s.subtitle}</p>}
+          <span className="text-lg font-bold" style={{ color: C.sky }}>Part {s.partNumber || idx}</span>
+          <h1 className="text-5xl font-bold" style={{ color: C.white }}>{s.title}</h1>
+          {s.subtitle && <p className="text-lg" style={{ color: C.gray }}>{s.subtitle}</p>}
         </div>
       )}
 
-      {/* ── 2열 콘텐츠 ── */}
+      {/* ── 2열 (슬라이드5 밝은) ── */}
       {type === "twoColumn" && (
         <div className="animate-slide-up space-y-5">
-          <TplTitle>{s.title}</TplTitle>
+          <h2 className="text-center text-2xl font-bold" style={{ color: C.cyan }}>{s.title}</h2>
           <div className="grid gap-5 md:grid-cols-2">
             {[0, 1].map(i => { const it = getItem(i); return it ? (
-              <div key={i} className="rounded-2xl p-6" style={{ background: C.navy }}>
-                <h3 className="mb-2 text-lg font-bold" style={{ color: "#fff" }}>{it.title}</h3>
-                {it.desc && <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,.6)" }}>{it.desc}</p>}
+              <div key={i} className="rounded-2xl p-6" style={{ background: C.dark }}>
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-bold" style={{ color: C.white }}>
+                  <span style={{ color: [C.cyan, C.red][i] }}>{["🎮", "💡"][i]}</span>{it.title}
+                </h3>
+                {it.desc && <p className="text-sm leading-relaxed" style={{ color: C.gray }}>{it.desc}</p>}
               </div>
             ) : null; })}
           </div>
         </div>
       )}
 
-      {/* ── 3카드 ── */}
+      {/* ── 3카드 (슬라이드8 밝은) ── */}
       {type === "threeCards" && (
         <div className="animate-slide-up space-y-5">
           <TplTitle label={s.sectionLabel}>{s.title}</TplTitle>
           <div className="grid gap-4 md:grid-cols-3">
-            {items.slice(0, 3).map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={[C.blue, C.red, C.green][i % 3]} /> : null; })}
+            {items.slice(0, 3).map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={[C.cyan, C.sky, C.red][i % 3]} /> : null; })}
           </div>
         </div>
       )}
 
-      {/* ── 케이스 스터디 ── */}
+      {/* ── 케이스 스터디 (슬라이드7/11 밝은) ── */}
       {type === "caseStudy" && (
         <div className="animate-slide-up space-y-5">
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: C.red }}>Case Study</span>
-          <h2 className="text-3xl font-bold" style={{ color: C.navy }}>{s.title}</h2>
+          <span className="text-xs font-bold uppercase tracking-[.25em]" style={{ color: C.red }}>Case Study</span>
+          <h2 className="text-3xl font-bold" style={{ color: C.dark }}>{s.title}</h2>
           <div style={{ width: 60, height: 3, background: C.red, borderRadius: 2 }} />
-          <div className={hasImage ? "grid gap-6 md:grid-cols-2" : ""}>
-            <div>
-              {s.description && <p className="text-base leading-relaxed" style={{ color: "#444" }}>{s.description}</p>}
-              {items.length > 0 && (
-                <div className="mt-4 space-y-3">
-                  {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={C.red} /> : null; })}
-                </div>
-              )}
+          <div className={hasImage ? "grid gap-6 md:grid-cols-2 items-start" : ""}>
+            <div className="space-y-4">
+              {s.description && <p className="text-base leading-relaxed" style={{ color: C.gray }}>{s.description}</p>}
+              {items.length > 0 && items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={C.red} /> : null; })}
             </div>
-            {hasImage && <SlideImage {...imgProps} />}
+            {hasImage && <div className="overflow-hidden rounded-2xl"><SlideImage {...imgProps} /></div>}
           </div>
         </div>
       )}
 
-      {/* ── 소결 (다크) ── */}
+      {/* ── 소결 (슬라이드9 다크) ── */}
       {type === "summary" && (
         <div className="animate-slide-up mx-auto max-w-3xl space-y-6 text-center">
-          <span className="text-6xl" style={{ color: C.blue, fontFamily: "Georgia,serif" }}>&ldquo;</span>
-          <h2 className="text-3xl font-bold" style={{ color: "#fff" }}>{s.title}</h2>
-          <p className="text-lg italic leading-relaxed" style={{ color: "rgba(255,255,255,.65)" }}>{s.quote || s.description}</p>
-          {s.author && <p className="text-sm" style={{ color: "rgba(255,255,255,.4)" }}>&mdash; {s.author}</p>}
+          <span className="text-6xl leading-none" style={{ color: C.cyan, fontFamily: "Georgia,serif" }}>&ldquo;</span>
+          <h2 className="text-3xl font-bold" style={{ color: C.white }}>{s.title}</h2>
+          <p className="text-lg italic leading-relaxed" style={{ color: C.gray }}>{s.quote || s.description}</p>
+          {s.author && <p className="text-sm" style={{ color: C.gray }}>&mdash; {s.author}</p>}
         </div>
       )}
 
-      {/* ── 비교표 ── */}
+      {/* ── 비교표 (슬라이드13 밝은) ── */}
       {type === "table" && (
         <div className="animate-slide-up space-y-5">
           <TplTitle>{s.title}</TplTitle>
           {s.tableHeaders && s.tableRows && (
-            <div className="overflow-hidden rounded-xl border" style={{ borderColor: "#d6e4f0" }}>
+            <div className="overflow-hidden rounded-xl border" style={{ borderColor: C.border }}>
               <table className="w-full text-sm">
-                <thead><tr style={{ background: C.navy }}>
-                  {s.tableHeaders.map((h, i) => <th key={i} className="px-4 py-3 text-left font-bold" style={{ color: "#fff" }}>{h}</th>)}
+                <thead><tr style={{ background: C.dark }}>
+                  {s.tableHeaders.map((h, i) => <th key={i} className="px-4 py-3 text-left font-bold" style={{ color: C.white }}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {s.tableRows.map((row, ri) => (
-                    <tr key={ri} style={{ background: ri % 2 === 0 ? "#fff" : "#f0f4f8" }}>
-                      {row.map((cell, ci) => <td key={ci} className="px-4 py-3" style={{ color: ci === 0 ? C.navy : "#444", fontWeight: ci === 0 ? 600 : 400 }}>{cell}</td>)}
+                    <tr key={ri} style={{ background: ri % 2 === 0 ? C.white : C.lgray }}>
+                      {row.map((cell, ci) => <td key={ci} className="px-4 py-3" style={{ color: ci === 0 ? C.dark : C.gray, fontWeight: ci === 0 ? 600 : 400 }}>{cell}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -216,26 +213,31 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
         </div>
       )}
 
-      {/* ── 일반 콘텐츠 (기존) ── */}
-      {(type === "content" || type === "comparison" || type === "quote") && (
+      {/* ── 일반 콘텐츠 + 이미지+텍스트 ── */}
+      {(type === "content" || type === "comparison" || type === "quote" || type === "imageText" || type === "keyValue" || type === "example" || type === "caseDetail") && (
         <div className="animate-slide-up space-y-5">
           <TplTitle label={s.sectionLabel}>{s.title}</TplTitle>
-          {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: "#444" }}>{s.description}</p>}
-          {type === "quote" && s.quote && <p className="text-lg italic" style={{ color: "#555" }}>&ldquo;{s.quote}&rdquo;</p>}
-          {hasImage && <SlideImage {...imgProps} />}
-          {items.length > 0 && (
-            <div className={items.length <= 3 ? "grid gap-4 md:grid-cols-3" : "grid gap-4 md:grid-cols-2"}>
-              {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} /> : null; })}
+          <div className={hasImage ? "grid gap-6 items-start" : ""}>
+            <div className="space-y-4">
+              {s.description && <p className="max-w-3xl text-base leading-relaxed" style={{ color: C.gray }}>{s.description}</p>}
+              {type === "quote" && s.quote && <p className="text-lg italic" style={{ color: C.gray }}>&ldquo;{s.quote}&rdquo;</p>}
+              {items.length > 0 && (
+                <div className={items.length <= 3 ? "grid gap-4 md:grid-cols-3" : "grid gap-4 md:grid-cols-2"}>
+                  {items.map((_, i) => { const it = getItem(i); return it ? <TplCard key={i} title={it.title} desc={it.desc} accent={[C.cyan, C.sky, C.red][i % 3]} /> : null; })}
+                </div>
+              )}
             </div>
-          )}
+            {hasImage && <div className="overflow-hidden rounded-2xl"><SlideImage {...imgProps} /></div>}
+          </div>
         </div>
       )}
 
-      {/* ── 마무리 ── */}
+      {/* ── 마무리 (슬라이드14 다크) ── */}
       {type === "closing" && (
-        <div className="animate-slide-up space-y-3 text-center">
-          <h1 className="text-5xl font-bold md:text-6xl" style={{ color: "#fff" }}>{s.title || "감사합니다"}</h1>
-          {s.subtitle && <p className="text-lg" style={{ color: "rgba(255,255,255,.5)" }}>{s.subtitle}</p>}
+        <div className="animate-slide-up space-y-4 text-center">
+          <h1 className="text-5xl font-bold md:text-6xl" style={{ color: C.white }}>{s.title || "감사합니다"}</h1>
+          {s.subtitle && <p className="text-lg" style={{ color: C.gray }}>{s.subtitle}</p>}
+          <div className="mx-auto" style={{ width: 80, height: 3, background: C.cyan, borderRadius: 2 }} />
         </div>
       )}
     </TplShell>
