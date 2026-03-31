@@ -247,10 +247,12 @@ async function exportWithOriginalTemplate(
   slides: SlideData[],
   fileName: string
 ): Promise<void> {
+  // 이미지 데이터(base64) 제거 — 텍스트만 전송 (413 방지)
+  const textOnly = slides.map(({ imageUrl, imagePrompt, ...rest }) => rest);
   const res = await fetch("/api/export-pptx", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slides }),
+    body: JSON.stringify({ slides: textOnly }),
   });
   const json = await res.json();
   if (json.error) throw new Error(json.error);
