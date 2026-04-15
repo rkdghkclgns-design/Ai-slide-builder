@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
+
 const nextConfig: NextConfig = {
+  output: "export",
+  basePath: isGitHubPages ? "/Ai-slide-builder" : "",
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -10,7 +15,7 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    NEXT_PUBLIC_BASE_PATH: process.env.GITHUB_PAGES === "true" ? "/Ai-slide-builder" : "",
+    NEXT_PUBLIC_BASE_PATH: isGitHubPages ? "/Ai-slide-builder" : "",
   },
 };
 

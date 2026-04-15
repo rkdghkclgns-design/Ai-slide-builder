@@ -108,21 +108,25 @@ export default function BuildView({
       let data = "";
       let srcs: Source[] = [];
 
-      onStatusChange("콘텐츠 수집 중...");
+      /* ── STEP 1: 리서치 ── */
+      onStatusChange("심층 리서치 중...");
       if (mode === "command") {
         const r = await ask(
-          `당신은 프레젠테이션 리서치 전문가입니다. 주어진 주제에 대해 깊이 있는 정보를 수집하세요.
+          `당신은 교육 콘텐츠 리서치 전문가입니다. 주어진 주제에 대해 ${sc}장 슬라이드, ${dur}분 강의에 사용할 수 있는 깊이 있는 자료를 작성하세요.
 
-반드시 포함할 내용:
-1. 주제 개요 및 배경 (정의, 역사, 맥락)
-2. 핵심 데이터와 통계 (수치, 비율, 금액 등 구체적 팩트)
-3. 주요 트렌드 및 변화 양상
-4. 장단점 또는 찬반 의견
-5. 실제 사례 및 케이스 스터디
-6. 전문가 의견 또는 전망
-7. 결론 및 시사점
+반드시 포함:
+1. 정의 및 개념 정리 (명확한 용어 설명)
+2. 역사적 배경과 발전 과정 (연도, 사건)
+3. 핵심 데이터와 통계 (구체적 수치 10개 이상)
+4. 주요 원리/메커니즘 상세 설명
+5. 실제 사례 및 케이스 스터디 (기업명, 결과 포함) 최소 3개
+6. 비교 분석 (장단점, 대안 비교표)
+7. 전문가 의견 및 인용
+8. 실무 적용 방법 및 팁
+9. 미래 전망 및 트렌드
+10. 핵심 요약 및 시사점
 
-각 항목에 대해 구체적 수치와 사실을 포함하여 상세하게 작성하세요.`,
+각 항목을 3-5문장 이상으로 구체적 수치와 함께 상세하게 작성하세요. 분량이 많을수록 좋습니다.`,
           cmd.trim(),
           true
         );
@@ -131,7 +135,7 @@ export default function BuildView({
         if (!data.trim()) throw new Error("리서치 결과가 비어있습니다.");
       } else if (mode === "url") {
         const r = await ask(
-          "이 URL의 핵심 내용을 구체적 수치와 사실 중심으로 상세하게 정리해주세요. 주요 논점, 데이터, 사례를 빠짐없이 포함하세요.",
+          `이 URL의 모든 내용을 깊이 있게 분석하세요. 핵심 논점, 구체적 수치, 사례, 인용구를 빠짐없이 정리하세요. 분량이 많을수록 좋습니다.`,
           url.trim(),
           true
         );
@@ -145,63 +149,88 @@ export default function BuildView({
             : "파일 내용 기반으로 프레젠테이션을 만들어주세요.";
       }
 
-      onProgressChange(40);
-      onStatusChange("슬라이드 구조 설계 중...");
+      /* ── STEP 2: 목차 설계 ── */
+      onProgressChange(30);
+      onStatusChange("강의 목차 설계 중...");
 
-      const BATCH = 10; // 배치당 슬라이드 수 (토큰 초과 방지)
-      const totalBatches = Math.ceil(sc / BATCH);
       const secPerSlide = Math.round((dur / sc) * 60);
+      const outlineRes = await ask(null, `당신은 대학교수 수준의 강의 설계 전문가입니다.
+
+아래 리서치 내용으로 ${sc}장 슬라이드, 총 ${dur}분 강의의 상세 목차를 설계하세요.
+
+## 규칙
+- 각 슬라이드의 제목과 다룰 핵심 내용을 1줄로 작성
+- 대주제(Section) → 소주제 구조로 논리적으로 구성
+- 1번: 표지(cover), 마지막: 마무리(closing) 고정
+- 2번: 학습 목표(objectives), 마지막-1번: 핵심 요약(summary)
+- 나머지: 도입→본론→심화→사례→정리 흐름
+
+JSON만 출력:
+{"outline":[{"idx":1,"title":"슬라이드 제목","type":"cover","topic":"다룰 내용 한줄 요약"},{"idx":2,...},...]}
+
+리서치 내용:
+${data.substring(0, 6000)}`, false);
+
+      const outlineRaw = pullText(outlineRes);
+      const outlineParsed = tryParse(outlineRaw) as { outline?: Array<{ idx: number; title: string; type: string; topic: string }> } | null;
+      const outline = outlineParsed?.outline || [];
+
+      /* ── STEP 3: 배치 슬라이드 생성 ── */
+      onProgressChange(40);
+      const BATCH = 10;
+      const totalBatches = Math.ceil(sc / BATCH);
       let allSlides: SlideData[] = [];
 
-      const typeRules = `## 슬라이드 type 규칙
-- "cover": title + subtitle
-- "intro": title + description (2-4문장)
-- "objectives": title + items (반드시 3개)
-- "section": partNumber + title + subtitle
-- "twoColumn": title + items (반드시 2개, 각각 title+desc)
-- "threeCards": title + items (반드시 3개, 각각 title+desc)
-- "caseStudy": sectionLabel + title + description (3문장 이상)
-- "summary": title + quote + author (선택)
-- "table": title + tableHeaders (3개) + tableRows (3-5행)
-- "content": title + description + items
+      const typeSpec = `## type별 필수 필드
+- "cover": title, subtitle
+- "intro": title, description (3-5문장 상세 설명)
+- "objectives": title, items (반드시 3개, 각 {title, desc})
+- "section": partNumber, title, subtitle
+- "twoColumn": title, items (반드시 2개, 각 {title, desc} — desc 2문장 이상)
+- "threeCards": title, items (반드시 3개, 각 {title, desc} — desc 2문장 이상)
+- "caseStudy": sectionLabel="Case Study", title, description (4문장 이상, 기업명/수치 포함)
+- "summary": title, quote (핵심 문장), author (선택)
+- "table": title, tableHeaders (3-4개), tableRows (4-6행)
+- "content": title, description (3문장 이상), items (2-4개)
 - "closing": title`;
-
-      const qualityRules = `## 품질 규칙
-- 구체적 수치, 통계, 사례를 반드시 포함
-- description 최소 2-3문장, items desc 최소 1-2문장
-- 같은 type 연속 2번 금지, 다양한 type 균형 배치
-- script: 약 ${secPerSlide}초 분량, 3-5문장
-${useImages ? '- 각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가' : ""}
-- JSON만 출력 (마크다운 없이): {"slides":[...]}`;
 
       for (let batch = 0; batch < totalBatches; batch++) {
         const isFirst = batch === 0;
-        const isLast = batch === totalBatches - 1;
-        const batchSize = isLast ? sc - allSlides.length : BATCH;
+        const batchStart = batch * BATCH;
+        const batchSize = Math.min(BATCH, sc - allSlides.length);
         const batchNum = batch + 1;
 
         onStatusChange(`슬라이드 생성 중... (${batchNum}/${totalBatches})`);
         onProgressChange(40 + Math.round((batch / totalBatches) * 40));
 
-        const existingTitles = allSlides.length > 0
-          ? `\n\n기존 슬라이드 제목 (중복 금지):\n${allSlides.map((s) => s.title).join(", ")}`
+        // 이 배치에 해당하는 목차 항목
+        const batchOutline = outline.slice(batchStart, batchStart + batchSize);
+        const outlineGuide = batchOutline.length > 0
+          ? `\n\n## 이 배치의 목차 (반드시 이 순서와 type을 따르세요):\n${batchOutline.map((o) => `${o.idx}. [${o.type}] ${o.title} — ${o.topic}`).join("\n")}`
           : "";
 
-        const structureHint = isFirst
-          ? `- 1번째는 반드시 "cover" type`
-          : isLast
-            ? `- 마지막은 반드시 "closing" type`
-            : `- section type으로 파트를 구분하세요`;
+        const prompt = `당신은 대학교수 수준의 강의 콘텐츠 제작자입니다.
+정확히 ${batchSize}개의 슬라이드를 생성하세요 (전체 ${sc}장 중 ${allSlides.length + 1}~${allSlides.length + batchSize}번째).
 
-        const prompt = `전문 프레젠테이션 디자이너로서 ${batchSize}개 슬라이드를 생성하세요.
-전체 ${sc}장 중 ${allSlides.length + 1}~${allSlides.length + batchSize}번째 슬라이드입니다.
+${typeSpec}
 
-${typeRules}
+## 콘텐츠 품질 기준 (매우 중요!)
+- description: 최소 3문장. 배경 설명, 핵심 내용, 의의를 포함
+- items의 각 desc: 최소 2문장. 구체적 수치/사례 포함
+- table: 실제 비교 가능한 데이터로 4행 이상
+- caseStudy: 기업명, 도입 시기, 결과(수치), 시사점 포함
+- 빈 필드나 "..." 같은 플레이스홀더 절대 금지
 
-## 구성
-${structureHint}
-${qualityRules}
-${existingTitles}
+## script 작성 기준 (강의 스크립트)
+각 슬라이드에 "script" 필드를 추가. 이것은 강사가 실제 읽을 대본입니다.
+- 분량: 약 ${secPerSlide}초 (${Math.round(secPerSlide * 3)}자 내외)
+- 구성: (1) 도입 — 이 슬라이드의 핵심 메시지 한줄 (2) 설명 — 구체적 내용 전개, 수치/사례 인용 (3) 연결 — 다음 슬라이드로의 자연스러운 전환
+- 톤: 전문적이면서 이해하기 쉬운 강의 톤. "~입니다", "~합니다" 체
+- 예시, 비유, 질문을 적절히 활용
+${useImages ? '\n- 각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가' : ""}
+
+JSON만 출력 (마크다운 코드블록 없이): {"slides":[...]}
+${outlineGuide}
 
 ## 리서치 내용:
 ${data.substring(0, 6000)}`;
@@ -214,8 +243,7 @@ ${data.substring(0, 6000)}`;
             allSlides = [...allSlides, ...parsed.slides];
           }
         } catch (e) {
-          if (isFirst) throw e; // 첫 배치 실패는 치명적
-          // 이후 배치 실패는 기존 슬라이드로 계속
+          if (isFirst) throw e;
         }
       }
 
