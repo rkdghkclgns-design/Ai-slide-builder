@@ -94,7 +94,7 @@ function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
       {/* 원본 슬라이드 배경 이미지 */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(/slide-${tplNum}.png)`, backgroundSize: "cover" }}
+        style={{ backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_PATH || ""}/slide-${tplNum}.png)`, backgroundSize: "cover" }}
       />
 
       {/* 텍스트 오버레이 — 원본 플레이스홀더 위치에 맞춤 */}
