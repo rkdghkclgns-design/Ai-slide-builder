@@ -154,16 +154,30 @@ export default function BuildView({
       onStatusChange("강의 목차 설계 중...");
 
       const secPerSlide = Math.round((dur / sc) * 60);
-      const outlineRes = await ask(null, `당신은 대학교수 수준의 강의 설계 전문가입니다.
+      const outlineRes = await ask(null, `당신은 교육과정 설계 전문가(Curriculum Designer)입니다.
 
 아래 리서치 내용으로 ${sc}장 슬라이드, 총 ${dur}분 강의의 상세 목차를 설계하세요.
 
+## 필수 구조 (교안 도우미 규격 — 반드시 준수)
+슬라이드는 반드시 다음 순서로 시작해야 합니다:
+1번: 표지(cover) — 강의 제목과 부제
+2번: 개요(intro) — 이 강의의 배경, 필요성, 다룰 내용 소개
+3번: 학습 목표(objectives) — 이 강의를 마치면 할 수 있는 것 3가지
+
+이후 본론:
+4번~: 핵심 내용 — section으로 대주제 구분, 하위에 상세 슬라이드
+- 개념 정의 → 이론 설명 → 구체적 예시 → 사례 분석 흐름
+- 비교표(table), 사례연구(caseStudy) 적극 활용
+- 5-8장마다 중간 요약(summary) 배치
+
+마무리:
+마지막-1번: 핵심 요약(summary) — 전체 내용 정리
+마지막번: 마무리(closing)
+
 ## 규칙
-- 각 슬라이드의 제목과 다룰 핵심 내용을 1줄로 작성
-- 대주제(Section) → 소주제 구조로 논리적으로 구성
-- 1번: 표지(cover), 마지막: 마무리(closing) 고정
-- 2번: 학습 목표(objectives), 마지막-1번: 핵심 요약(summary)
-- 나머지: 도입→본론→심화→사례→정리 흐름
+- 각 슬라이드의 제목과 다룰 핵심 내용을 1줄로 구체적으로 작성
+- 같은 type이 3번 이상 연속 금지
+- section 슬라이드는 대주제 전환 시에만 사용
 
 JSON만 출력:
 {"outline":[{"idx":1,"title":"슬라이드 제목","type":"cover","topic":"다룰 내용 한줄 요약"},{"idx":2,...},...]}
@@ -183,15 +197,15 @@ ${data.substring(0, 6000)}`, false);
 
       const typeSpec = `## type별 필수 필드
 - "cover": title, subtitle
-- "intro": title, description (3-5문장 상세 설명)
-- "objectives": title, items (반드시 3개, 각 {title, desc})
+- "intro": title, description (개요 — 3-5문장. 이 강의의 배경, 필요성, 다룰 내용을 소개)
+- "objectives": title, items (학습 목표 — 반드시 3개, 각 {title, desc}. "~할 수 있다" 형식)
 - "section": partNumber, title, subtitle
-- "twoColumn": title, items (반드시 2개, 각 {title, desc} — desc 2문장 이상)
-- "threeCards": title, items (반드시 3개, 각 {title, desc} — desc 2문장 이상)
-- "caseStudy": sectionLabel="Case Study", title, description (4문장 이상, 기업명/수치 포함)
+- "twoColumn": title, items (반드시 2개, 각 {title, desc} — desc 3문장 이상)
+- "threeCards": title, items (반드시 3개, 각 {title, desc} — desc 3문장 이상)
+- "caseStudy": sectionLabel="Case Study", title, description (5문장 이상. 반드시 기업명/제품명, 도입 배경, 적용 방법, 결과(수치), 시사점 포함)
 - "summary": title, quote (핵심 문장), author (선택)
-- "table": title, tableHeaders (3-4개), tableRows (4-6행)
-- "content": title, description (3문장 이상), items (2-4개)
+- "table": title, tableHeaders (3-4개), tableRows (5-7행, 실제 비교 데이터)
+- "content": title, description (3문장 이상), items (3-5개, 각 desc 2문장 이상)
 - "closing": title`;
 
       for (let batch = 0; batch < totalBatches; batch++) {
@@ -203,31 +217,45 @@ ${data.substring(0, 6000)}`, false);
         onStatusChange(`슬라이드 생성 중... (${batchNum}/${totalBatches})`);
         onProgressChange(40 + Math.round((batch / totalBatches) * 40));
 
-        // 이 배치에 해당하는 목차 항목
         const batchOutline = outline.slice(batchStart, batchStart + batchSize);
         const outlineGuide = batchOutline.length > 0
           ? `\n\n## 이 배치의 목차 (반드시 이 순서와 type을 따르세요):\n${batchOutline.map((o) => `${o.idx}. [${o.type}] ${o.title} — ${o.topic}`).join("\n")}`
           : "";
 
-        const prompt = `당신은 대학교수 수준의 강의 콘텐츠 제작자입니다.
+        const prompt = `당신은 전문 강사이자 교안 작성 전문가입니다.
 정확히 ${batchSize}개의 슬라이드를 생성하세요 (전체 ${sc}장 중 ${allSlides.length + 1}~${allSlides.length + batchSize}번째).
 
 ${typeSpec}
 
-## 콘텐츠 품질 기준 (매우 중요!)
-- description: 최소 3문장. 배경 설명, 핵심 내용, 의의를 포함
-- items의 각 desc: 최소 2문장. 구체적 수치/사례 포함
-- table: 실제 비교 가능한 데이터로 4행 이상
-- caseStudy: 기업명, 도입 시기, 결과(수치), 시사점 포함
-- 빈 필드나 "..." 같은 플레이스홀더 절대 금지
+## 콘텐츠 품질 기준 (교안 도우미 수준 — 매우 중요!)
+1. 설계 의도 부합성: 목차의 의도와 내용이 정확히 일치해야 합니다.
+2. 대상 수준 적합성: 초보자도 이해할 수 있되, 전문 용어는 유지하고 괄호 안에 풀어쓴 정의를 병기하세요.
+3. 사실 기반: 근거 없는 단정이나 추측 금지. 구체적 수치, 연도, 기업명을 포함하세요.
+4. 분량 기준:
+   - description: 최소 4문장 (배경→핵심→사례→의의)
+   - items desc: 최소 3문장 (정의→설명→예시)
+   - table: 실제 비교 데이터 5행 이상
+   - caseStudy: 기업명, 도입시기, 적용방법, 결과(수치), 시사점 5문장 이상
+5. 빈 필드, "...", 일반적 문구("다양한 분야에서 활용됩니다" 등) 절대 금지
+6. 구조 연결성: 개요→학습목표→핵심내용→사례→정리 흐름이 자연스러워야 합니다.
 
-## script 작성 기준 (강의 스크립트)
-각 슬라이드에 "script" 필드를 추가. 이것은 강사가 실제 읽을 대본입니다.
+## script 작성 기준 (강사 대본 — 바로 강의 가능 수준)
+각 슬라이드에 "script" 필드 추가. 강사가 이 대본만 읽으면 바로 수업 가능해야 합니다.
 - 분량: 약 ${secPerSlide}초 (${Math.round(secPerSlide * 3)}자 내외)
-- 구성: (1) 도입 — 이 슬라이드의 핵심 메시지 한줄 (2) 설명 — 구체적 내용 전개, 수치/사례 인용 (3) 연결 — 다음 슬라이드로의 자연스러운 전환
-- 톤: 전문적이면서 이해하기 쉬운 강의 톤. "~입니다", "~합니다" 체
-- 예시, 비유, 질문을 적절히 활용
-${useImages ? '\n- 각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가' : ""}
+- 필수 구성:
+  (1) 도입 한줄: "자, 이제 [주제]에 대해 알아보겠습니다." 또는 질문형 도입
+  (2) 핵심 설명 (3-5문장): 슬라이드 내용을 구체적으로 풀어서 설명. 수치/사례 반드시 인용.
+  (3) 보충 설명: 비유, 실제 사례, "예를 들면~" 표현 활용
+  (4) 전환: "다음으로 [다음 주제]를 살펴보겠습니다." 자연스러운 연결
+- 톤: 합쇼체(~합니다, ~입니다). 전문적이면서 이해하기 쉬운 강의 톤.
+- 청중 참여: "여러분은 어떻게 생각하시나요?", "혹시 경험이 있으신가요?" 등 간간이 활용
+${useImages ? '\n- 각 슬라이드에 "imagePrompt"(영문 40-80단어, 교육 자료 스타일 일러스트) 추가' : ""}
+
+[자체 검증] 초안 작성 후 아래 확인 후 최종본만 출력:
+- 모든 description이 4문장 이상인가?
+- 모든 items desc가 3문장 이상인가?
+- 빈 필드나 플레이스홀더가 없는가?
+- script가 실제 강의 가능한 수준인가?
 
 JSON만 출력 (마크다운 코드블록 없이): {"slides":[...]}
 ${outlineGuide}
@@ -255,7 +283,7 @@ ${data.substring(0, 6000)}`;
         onStatusChange("AI 이미지 생성 중...");
         onProgressChange(80);
 
-        // 슬라이드별 이미지 프롬프트 구성
+        // 슬라이드별 이미지 프롬프트 구성 (교안 도우미 수준)
         const prompts = allSlides.map((s) => {
           if (s.imagePrompt) return s.imagePrompt;
           const context = [
@@ -268,8 +296,8 @@ ${data.substring(0, 6000)}`;
             .filter(Boolean)
             .join(", ");
           return context
-            ? `professional photograph related to: ${context}. Style: clean, modern, high quality`
-            : "modern abstract business presentation visual";
+            ? `Clean professional digital illustration for education slide about: ${context}. Style: modern flat design, suitable for lecture material. 16:9 aspect ratio. No text overlay.`
+            : "Modern abstract education presentation visual, clean flat design, 16:9";
         });
 
         // 2개씩 순차 배치로 생성 (rate limit 방지)
