@@ -1,88 +1,88 @@
 import { Source } from "./types";
 
-interface ClaudeMessage {
-  type?: string;
-  content?: Array<{
-    type: string;
-    text?: string;
-    content?: Array<{
-      type: string;
-      title?: string;
-      url?: string;
-    }>;
+export const _SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+export const _SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+/* ═══ Gemini 응답 타입 ═══ */
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+    finishReason?: string;
   }>;
-  stop_reason?: string;
   error?: { message?: string };
 }
 
+/* ═══ 통합 응답 타입 (기존 코드 호환) ═══ */
+export interface AskResult {
+  text: string;
+  sources: Source[];
+  stop_reason?: string;
+}
+
+/* ═══ Gemini Edge Function 호출 ═══ */
 export async function ask(
   system: string | null,
   userContent: string,
-  useSearch = false
-): Promise<ClaudeMessage> {
+  _useSearch = false
+): Promise<AskResult> {
   if (!_SB_URL || !_SB_KEY) {
     throw new Error("Supabase 환경변수가 설정되지 않았습니다.");
   }
-  const url = `${_SB_URL}/functions/v1/gemini-proxy`;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${_SB_KEY}`,
-  };
+  const content = system
+    ? `${system}\n\n${userContent}`
+    : userContent;
 
-  const res = await fetch(url, {
+  const res = await fetch(`${_SB_URL}/functions/v1/gemini-proxy`, {
     method: "POST",
-    headers,
-    body: JSON.stringify({ system, userContent, useSearch }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${_SB_KEY}`,
+    },
+    body: JSON.stringify({ content }),
   });
 
   if (!res.ok) {
     let errorMsg = `HTTP ${res.status}`;
     try {
       const errJson = await res.json();
-      errorMsg = errJson.error?.message || JSON.stringify(errJson).substring(0, 200);
+      errorMsg = errJson.error || errJson.details || JSON.stringify(errJson).substring(0, 300);
     } catch {
-      // non-JSON error response
+      // non-JSON
     }
     throw new Error(`API Error: ${errorMsg}`);
   }
 
-  const json = await res.json();
-  if (json.type === "error") {
-    throw new Error(
-      `API Error: ${json.error?.message || JSON.stringify(json.error)}`
-    );
+  const json: GeminiResponse = await res.json();
+
+  if (json.error) {
+    throw new Error(`API Error: ${json.error.message || JSON.stringify(json.error)}`);
   }
-  return json;
+
+  const text = json.candidates?.[0]?.content?.parts
+    ?.map((p) => p.text || "")
+    .join("\n") || "";
+
+  return {
+    text,
+    sources: [],
+    stop_reason: json.candidates?.[0]?.finishReason,
+  };
 }
 
-export function pullText(d: ClaudeMessage): string {
-  if (!d?.content) return "";
-  return d.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text || "")
-    .join("\n");
+/* ═══ 텍스트 추출 (호환 래퍼) ═══ */
+export function pullText(d: AskResult): string {
+  return d?.text || "";
 }
 
-export function pullSources(d: ClaudeMessage): Source[] {
-  const out: Source[] = [];
-  if (!d?.content) return out;
-  for (const b of d.content) {
-    if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
-      for (const r of b.content) {
-        if (
-          r.type === "web_search_result" &&
-          r.title &&
-          r.url &&
-          !out.some((x) => x.url === r.url)
-        )
-          out.push({ title: r.title, url: r.url });
-      }
-    }
-  }
-  return out;
+/* ═══ 출처 추출 (호환 래퍼) ═══ */
+export function pullSources(d: AskResult): Source[] {
+  return d?.sources || [];
 }
 
+/* ═══ JSON 파싱 유틸 ═══ */
 export function tryParse(raw: string | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null;
   const c = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -112,10 +112,7 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
   return null;
 }
 
-export const _SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-export const _SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-/** base64 data URL → Supabase Storage에 업로드 → public URL 반환 */
+/* ═══ Storage 업로드 ═══ */
 export async function uploadImageToStorage(dataUrl: string): Promise<string | null> {
   if (!_SB_URL || !_SB_KEY || !dataUrl.startsWith("data:")) return null;
   try {
@@ -144,18 +141,16 @@ export async function uploadImageToStorage(dataUrl: string): Promise<string | nu
   }
 }
 
+/* ═══ AI 이미지 생성 ═══ */
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
     if (!_SB_URL || !_SB_KEY) return null;
-    const url = `${_SB_URL}/functions/v1/image-gen`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${_SB_KEY}`,
-    };
-
-    const res = await fetch(url, {
+    const res = await fetch(`${_SB_URL}/functions/v1/image-gen`, {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${_SB_KEY}`,
+      },
       body: JSON.stringify({ prompt }),
     });
     const json = await res.json();
