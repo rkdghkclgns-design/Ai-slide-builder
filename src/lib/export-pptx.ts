@@ -148,6 +148,11 @@ function buildTemplateSlide(
     } catch { /* skip */ }
   }
 
+  // 발표 스크립트 → 발표자 노트에 추가
+  if (s.script) {
+    slide.addNotes(s.script);
+  }
+
   addPageNum(slide, idx, total, isDark);
 }
 
@@ -231,6 +236,10 @@ function buildDefaultSlide(
         );
       });
     }
+    // 발표 스크립트 → 발표자 노트
+    if (s.script) {
+      slide.addNotes(s.script);
+    }
     // 기본 모드 이미지 추가
     if (s.imageUrl) {
       if (s.imageUrl.startsWith("data:")) {
@@ -258,9 +267,16 @@ async function exportWithOriginalTemplate(
       return { ...s, imagePrompt: undefined };
     })
   );
-  const res = await fetch("/api/export-pptx", {
+  const { _SB_URL, _SB_KEY } = await import("./api");
+  const exportUrl = _SB_URL
+    ? `${_SB_URL}/functions/v1/export-pptx`
+    : "/api/export-pptx";
+  const exportHeaders: Record<string, string> = { "Content-Type": "application/json" };
+  if (_SB_URL && _SB_KEY) exportHeaders["Authorization"] = `Bearer ${_SB_KEY}`;
+
+  const res = await fetch(exportUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: exportHeaders,
     body: JSON.stringify({ slides: uploadedSlides }),
   });
   const json = await res.json();

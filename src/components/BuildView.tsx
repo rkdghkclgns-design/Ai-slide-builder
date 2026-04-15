@@ -64,7 +64,7 @@ export default function BuildView({
   const [url, setUrl] = useState("");
   const [slideCount, setSlideCount] = useState<number | "">(8);
   const [duration, setDuration] = useState<number | "">(15);
-  const [themeId, setThemeId] = useState("neonGaming");
+  const [themeId, setThemeId] = useState("pptxTemplate");
   const [aiTheme, setAiTheme] = useState(false);
   const [useImages, setUseImages] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -157,14 +157,16 @@ export default function BuildView({
 중간 슬라이드는 내용에 따라 다양한 type을 선택하세요.
 ${useImages ? '각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가.' : ""}
 
+각 슬라이드에 "script" 필드를 추가하세요. script는 발표자가 해당 슬라이드에서 설명해야 할 주요 내용을 2-4문장으로 작성합니다.
+
 JSON만 출력:
 {"slides":[
-  {"type":"cover","title":"제목","subtitle":"설명"},
-  {"type":"intro","title":"소개 제목","description":"본문"},
-  {"type":"threeCards","title":"핵심 포인트","items":[{"title":"항목1","desc":"설명1"},{"title":"항목2","desc":"설명2"},{"title":"항목3","desc":"설명3"}]},
-  {"type":"table","title":"비교","tableHeaders":["구분","A","B"],"tableRows":[["항목1","값1","값2"]]},
-  {"type":"summary","title":"소결","quote":"핵심 메시지"},
-  {"type":"closing","title":"감사합니다"}
+  {"type":"cover","title":"제목","subtitle":"설명","script":"이 슬라이드에서는 주제를 소개합니다."},
+  {"type":"intro","title":"소개 제목","description":"본문","script":"도입부에서 핵심 배경을 설명합니다."},
+  {"type":"threeCards","title":"핵심 포인트","items":[{"title":"항목1","desc":"설명1"},{"title":"항목2","desc":"설명2"},{"title":"항목3","desc":"설명3"}],"script":"세 가지 핵심 포인트를 순서대로 설명합니다."},
+  {"type":"table","title":"비교","tableHeaders":["구분","A","B"],"tableRows":[["항목1","값1","값2"]],"script":"비교표를 통해 차이점을 설명합니다."},
+  {"type":"summary","title":"소결","quote":"핵심 메시지","script":"핵심 메시지를 강조합니다."},
+  {"type":"closing","title":"감사합니다","script":"마무리 인사를 합니다."}
 ]}
 
 내용:
@@ -531,59 +533,58 @@ ${data.substring(0, 1200)}`;
           )}
         </div>
 
-        {/* PPTX Template */}
+        {/* PPTX Template — 기본 고정 양식 */}
         <div
-          className="rounded-3xl border p-5 backdrop-blur-xl transition-colors"
+          className="rounded-3xl border p-5 backdrop-blur-xl"
           style={{
-            borderColor: useTemplate
-              ? "rgba(79,129,189,.2)"
-              : "rgba(255,255,255,.08)",
-            background: useTemplate
-              ? "rgba(79,129,189,.05)"
-              : "rgba(255,255,255,.03)",
+            borderColor: "rgba(79,129,189,.25)",
+            background: "rgba(79,129,189,.06)",
           }}
         >
           <div className="flex items-center gap-3">
             <span className="text-base">📄</span>
             <h3 className="flex-1 text-sm font-semibold text-white">
-              PPTX 템플릿 서식
+              기본 양식 — 슬라이드 템플릿
             </h3>
-            <button
-              onClick={() => onUseTemplateChange(!useTemplate)}
-              className="relative h-7 w-14 rounded-full transition-all"
-              style={{
-                background: useTemplate ? "#4F81BD" : "rgba(255,255,255,.1)",
-              }}
-            >
-              <div
-                className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-lg transition-all"
-                style={{ left: useTemplate ? 30 : 2 }}
-              />
-            </button>
+            <span className="rounded-lg bg-blue-500/20 px-2.5 py-1 text-[10px] font-bold text-blue-300">
+              고정
+            </span>
           </div>
-          {useTemplate && (
-            <p className="mt-2 text-xs text-blue-300/50">
-              PPTX 다운로드 시 슬라이드 양식 템플릿(Navy/맑은고딕) 서식이 적용됩니다
-            </p>
-          )}
+          <p className="mt-2 text-xs text-blue-300/50">
+            슬라이드 양식 템플릿(Navy/맑은고딕) 서식이 기본 적용됩니다. 아래에서 다른 테마를 선택할 수 있습니다.
+          </p>
         </div>
 
-        {/* Theme */}
+        {/* Theme — optional alternative */}
         <div className="space-y-4 rounded-3xl border border-white/8 bg-white/[.03] p-5 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-white/25" />
-            <h3 className="flex-1 text-sm font-semibold text-white">테마</h3>
+            <h3 className="flex-1 text-sm font-semibold text-white">
+              테마 변경 <span className="text-white/30 text-xs font-normal">(선택)</span>
+            </h3>
+            <button
+              onClick={() => {
+                if (themeId !== "pptxTemplate") {
+                  setThemeId("pptxTemplate");
+                  onUseTemplateChange(true);
+                  setAiTheme(false);
+                }
+              }}
+              className="flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-medium transition-all hover:bg-white/5"
+              style={{
+                borderColor: themeId === "pptxTemplate" ? "#4F81BD40" : "rgba(255,255,255,.08)",
+                color: themeId === "pptxTemplate" ? "#4F81BD" : "rgba(255,255,255,.4)",
+              }}
+            >
+              📄 기본
+            </button>
             {templates.length > 0 && (
               <button
                 onClick={() => setShowTemplates(!showTemplates)}
                 className="flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-medium transition-all hover:bg-white/5"
                 style={{
-                  borderColor: showTemplates
-                    ? "#f9731630"
-                    : "rgba(255,255,255,.08)",
-                  color: showTemplates
-                    ? "#f97316"
-                    : "rgba(255,255,255,.4)",
+                  borderColor: showTemplates ? "#f9731630" : "rgba(255,255,255,.08)",
+                  color: showTemplates ? "#f97316" : "rgba(255,255,255,.4)",
                 }}
               >
                 <FolderOpen className="h-3 w-3" />
@@ -594,9 +595,7 @@ ${data.substring(0, 1200)}`;
               onClick={() => setAiTheme(!aiTheme)}
               className="flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-medium transition-all hover:bg-white/5"
               style={{
-                borderColor: aiTheme
-                  ? "#a78bfa30"
-                  : "rgba(255,255,255,.08)",
+                borderColor: aiTheme ? "#a78bfa30" : "rgba(255,255,255,.08)",
                 color: aiTheme ? "#a78bfa" : "rgba(255,255,255,.4)",
               }}
             >
@@ -617,20 +616,17 @@ ${data.substring(0, 1200)}`;
                     className="group flex cursor-pointer items-center gap-3 rounded-xl p-2.5 hover:bg-white/[.03]"
                     onClick={() => {
                       setThemeId(tp.tid);
+                      onUseTemplateChange(tp.tid === "pptxTemplate");
                       setAiTheme(false);
                       setShowTemplates(false);
                     }}
                   >
                     <span>{th.ic}</span>
-                    <span className="flex-1 truncate text-sm text-white/60">
-                      {tp.name}
-                    </span>
+                    <span className="flex-1 truncate text-sm text-white/60">{tp.name}</span>
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        const next = templates.filter(
-                          (x) => x.id !== tp.id
-                        );
+                        const next = templates.filter((x) => x.id !== tp.id);
                         onTemplatesChange(next);
                         storageSet("slide-tpls", next);
                       }}
@@ -650,17 +646,14 @@ ${data.substring(0, 1200)}`;
               {Object.values(THEMES).filter((th) => th.id !== "pptxTemplate").map((th) => (
                 <div key={th.id} className="space-y-2">
                   <button
-                    onClick={() => setThemeId(th.id)}
+                    onClick={() => {
+                      setThemeId(th.id);
+                      onUseTemplateChange(false);
+                    }}
                     className="relative w-full overflow-hidden rounded-2xl border p-1.5 transition-all hover:scale-105"
                     style={{
-                      borderColor:
-                        themeId === th.id
-                          ? th.a1 + "60"
-                          : "rgba(255,255,255,.05)",
-                      boxShadow:
-                        themeId === th.id
-                          ? `0 0 20px ${th.a1}15`
-                          : "none",
+                      borderColor: themeId === th.id ? th.a1 + "60" : "rgba(255,255,255,.05)",
+                      boxShadow: themeId === th.id ? `0 0 20px ${th.a1}15` : "none",
                     }}
                   >
                     {themeId === th.id && (

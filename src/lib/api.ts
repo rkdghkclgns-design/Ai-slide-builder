@@ -20,15 +20,15 @@ export async function ask(
   userContent: string,
   useSearch = false
 ): Promise<ClaudeMessage> {
-  // GitHub Pages에서는 API 라우트가 동작하지 않으므로 Supabase Edge Function 직접 호출
-  const url = _SB_URL
-    ? `${_SB_URL}/functions/v1/gemini-proxy`
-    : "/api/claude";
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (_SB_URL && _SB_KEY) {
-    headers["Authorization"] = `Bearer ${_SB_KEY}`;
+  if (!_SB_URL || !_SB_KEY) {
+    throw new Error("Supabase 환경변수가 설정되지 않았습니다.");
   }
+  const url = `${_SB_URL}/functions/v1/gemini-proxy`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${_SB_KEY}`,
+  };
 
   const res = await fetch(url, {
     method: "POST",
@@ -146,12 +146,12 @@ export async function uploadImageToStorage(dataUrl: string): Promise<string | nu
 
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
-    // 프론트엔드에서 Supabase Edge Function 직접 호출 (Vercel 10초 타임아웃 우회)
-    const url = _SB_URL
-      ? `${_SB_URL}/functions/v1/image-gen`
-      : "/api/images"; // 폴백: Vercel 프록시
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (_SB_KEY) headers["Authorization"] = `Bearer ${_SB_KEY}`;
+    if (!_SB_URL || !_SB_KEY) return null;
+    const url = `${_SB_URL}/functions/v1/image-gen`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${_SB_KEY}`,
+    };
 
     const res = await fetch(url, {
       method: "POST",

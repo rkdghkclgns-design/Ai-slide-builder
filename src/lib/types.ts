@@ -67,6 +67,7 @@ export interface SlideData {
   partNumber?: number;
   tableHeaders?: string[];
   tableRows?: string[][];
+  script?: string;
 }
 
 export interface Source {

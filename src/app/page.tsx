@@ -11,13 +11,13 @@ import SlidesView from "@/components/SlidesView";
 export default function Home() {
   const [view, setView] = useState<ViewState>("build");
   const [slides, setSlides] = useState<SlideData[]>([]);
-  const [theme, setTheme] = useState<Theme>(THEMES.neonGaming);
+  const [theme, setTheme] = useState<Theme>(THEMES.pptxTemplate);
   const [sources, setSources] = useState<Source[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [useTemplate, setUseTemplate] = useState(false);
+  const [useTemplate, setUseTemplate] = useState(true);
 
   useEffect(() => {
     const saved = storageGet<Template[]>("slide-tpls");
