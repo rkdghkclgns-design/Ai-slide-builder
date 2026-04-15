@@ -111,7 +111,18 @@ export default function BuildView({
       onStatusChange("콘텐츠 수집 중...");
       if (mode === "command") {
         const r = await ask(
-          "신뢰 출처 기반으로 검색하여 핵심 데이터를 정리해주세요.",
+          `당신은 프레젠테이션 리서치 전문가입니다. 주어진 주제에 대해 깊이 있는 정보를 수집하세요.
+
+반드시 포함할 내용:
+1. 주제 개요 및 배경 (정의, 역사, 맥락)
+2. 핵심 데이터와 통계 (수치, 비율, 금액 등 구체적 팩트)
+3. 주요 트렌드 및 변화 양상
+4. 장단점 또는 찬반 의견
+5. 실제 사례 및 케이스 스터디
+6. 전문가 의견 또는 전망
+7. 결론 및 시사점
+
+각 항목에 대해 구체적 수치와 사실을 포함하여 상세하게 작성하세요.`,
           cmd.trim(),
           true
         );
@@ -120,7 +131,7 @@ export default function BuildView({
         if (!data.trim()) throw new Error("리서치 결과가 비어있습니다.");
       } else if (mode === "url") {
         const r = await ask(
-          "이 URL의 내용을 검색하여 요약해주세요.",
+          "이 URL의 핵심 내용을 구체적 수치와 사실 중심으로 상세하게 정리해주세요. 주요 논점, 데이터, 사례를 빠짐없이 포함하세요.",
           url.trim(),
           true
         );
@@ -137,40 +148,41 @@ export default function BuildView({
       onProgressChange(40);
       onStatusChange("슬라이드 생성 중...");
 
-      const n = Math.min(sc, 8);
-      const slidePrompt = `아래 내용으로 ${n}개 슬라이드를 만들어주세요.
+      const n = sc;
+      const slidePrompt = `당신은 전문 프레젠테이션 디자이너입니다. 아래 리서치 내용을 기반으로 정확히 ${n}개의 슬라이드를 만드세요.
 
-슬라이드 type 선택 규칙 (반드시 내용에 적합한 type을 선택):
+## 핵심 규칙
+- 리서치 내용의 구체적 수치, 통계, 사례를 반드시 슬라이드에 포함하세요.
+- 각 슬라이드의 내용은 충실하고 구체적이어야 합니다. 일반적인 문구가 아니라 실제 데이터를 활용하세요.
+- description은 최소 2-3문장, items의 각 desc도 최소 1-2문장으로 작성하세요.
+
+## 슬라이드 type 선택 규칙
 - "cover": 첫 슬라이드. title + subtitle
-- "intro": 주제 소개. title + description (긴 본문)
+- "intro": 주제 소개. title + description (2-4문장의 상세 본문)
 - "objectives": 목표/요약 3가지. title + items (반드시 3개)
 - "section": 파트 구분. partNumber + title + subtitle
 - "twoColumn": 비교/대조 2가지. title + items (반드시 2개, 각각 title+desc)
 - "threeCards": 핵심 포인트 3가지. title + items (반드시 3개, 각각 title+desc)
-- "caseStudy": 사례 연구. sectionLabel="Case Study" + title + description
+- "caseStudy": 사례 연구. sectionLabel="Case Study" + title + description (3문장 이상)
 - "summary": 소결/핵심 메시지. title + quote (핵심 문장) + author (선택)
 - "table": 비교표. title + tableHeaders (3개) + tableRows (3-5행, 각 3열)
 - "content": 일반 콘텐츠. title + description + items
 - "closing": 마지막 슬라이드. title
 
-첫 슬라이드는 반드시 "cover", 마지막은 "closing".
-중간 슬라이드는 내용에 따라 다양한 type을 선택하세요.
-${useImages ? '각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가.' : ""}
+## 구성 규칙
+- 1번째: 반드시 "cover", 마지막: 반드시 "closing"
+- 중간: 내용에 따라 다양한 type을 균형있게 배치 (같은 type 연속 2번 이상 금지)
+- section 슬라이드로 큰 주제를 구분하고, 하위에 상세 슬라이드 배치
+${useImages ? '- 각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가' : ""}
 
-각 슬라이드에 "script" 필드를 추가하세요. script는 발표자가 해당 슬라이드에서 설명해야 할 주요 내용을 2-4문장으로 작성합니다.
+## script 필드
+각 슬라이드에 "script" 필드 추가. 발표자가 해당 슬라이드에서 ${dur}분/${n}슬라이드 = 약 ${Math.round((dur / n) * 60)}초 분량으로 설명할 내용을 3-5문장으로 작성.
 
-JSON만 출력:
-{"slides":[
-  {"type":"cover","title":"제목","subtitle":"설명","script":"이 슬라이드에서는 주제를 소개합니다."},
-  {"type":"intro","title":"소개 제목","description":"본문","script":"도입부에서 핵심 배경을 설명합니다."},
-  {"type":"threeCards","title":"핵심 포인트","items":[{"title":"항목1","desc":"설명1"},{"title":"항목2","desc":"설명2"},{"title":"항목3","desc":"설명3"}],"script":"세 가지 핵심 포인트를 순서대로 설명합니다."},
-  {"type":"table","title":"비교","tableHeaders":["구분","A","B"],"tableRows":[["항목1","값1","값2"]],"script":"비교표를 통해 차이점을 설명합니다."},
-  {"type":"summary","title":"소결","quote":"핵심 메시지","script":"핵심 메시지를 강조합니다."},
-  {"type":"closing","title":"감사합니다","script":"마무리 인사를 합니다."}
-]}
+JSON만 출력 (마크다운 없이):
+{"slides":[...]}
 
-내용:
-${data.substring(0, 1200)}`;
+## 리서치 내용:
+${data.substring(0, 6000)}`;
 
       const slideRes = await ask(null, slidePrompt, false);
       const raw = pullText(slideRes);
@@ -184,16 +196,30 @@ ${data.substring(0, 1200)}`;
 
       let allSlides = parsed.slides;
 
-      if (sc > 8) {
-        const extraBatches = Math.ceil((sc - allSlides.length) / 6);
+      if (allSlides.length < sc) {
+        const extraBatches = Math.ceil((sc - allSlides.length) / 8);
+        const existingTitles = allSlides.map((s) => s.title).join(", ");
         for (let b = 0; b < extraBatches && allSlides.length < sc; b++) {
           onStatusChange(`추가 슬라이드 생성 ${b + 1}/${extraBatches}...`);
           onProgressChange(60 + Math.round((b / extraBatches) * 30));
-          const need = Math.min(6, sc - allSlides.length);
+          const need = Math.min(8, sc - allSlides.length);
           try {
             const extra = await ask(
               null,
-              `아래 내용으로 슬라이드 ${need}개 추가 생성. type "content" 또는 "quote"만. JSON: {"slides":[...]}. 내용:\n${data.substring(0, 800)}`,
+              `아래 리서치 내용을 기반으로 추가 슬라이드 ${need}개를 생성하세요.
+
+기존 슬라이드 제목: ${existingTitles}
+→ 기존 내용과 중복되지 않는 새로운 관점/데이터를 다루세요.
+
+사용 가능한 type: intro, objectives, twoColumn, threeCards, caseStudy, summary, table, content
+- 다양한 type을 골고루 사용하세요
+- 구체적 수치와 사례를 포함하세요
+- description과 items의 desc는 최소 1-2문장
+
+JSON만 출력: {"slides":[...]}
+
+리서치 내용:
+${data.substring(0, 4000)}`,
               false
             );
             const ep = tryParse(pullText(extra)) as { slides?: SlideData[] } | null;
