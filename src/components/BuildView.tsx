@@ -146,88 +146,81 @@ export default function BuildView({
       }
 
       onProgressChange(40);
-      onStatusChange("슬라이드 생성 중...");
+      onStatusChange("슬라이드 구조 설계 중...");
 
-      const n = sc;
-      const slidePrompt = `당신은 전문 프레젠테이션 디자이너입니다. 아래 리서치 내용을 기반으로 정확히 ${n}개의 슬라이드를 만드세요.
+      const BATCH = 10; // 배치당 슬라이드 수 (토큰 초과 방지)
+      const totalBatches = Math.ceil(sc / BATCH);
+      const secPerSlide = Math.round((dur / sc) * 60);
+      let allSlides: SlideData[] = [];
 
-## 핵심 규칙
-- 리서치 내용의 구체적 수치, 통계, 사례를 반드시 슬라이드에 포함하세요.
-- 각 슬라이드의 내용은 충실하고 구체적이어야 합니다. 일반적인 문구가 아니라 실제 데이터를 활용하세요.
-- description은 최소 2-3문장, items의 각 desc도 최소 1-2문장으로 작성하세요.
+      const typeRules = `## 슬라이드 type 규칙
+- "cover": title + subtitle
+- "intro": title + description (2-4문장)
+- "objectives": title + items (반드시 3개)
+- "section": partNumber + title + subtitle
+- "twoColumn": title + items (반드시 2개, 각각 title+desc)
+- "threeCards": title + items (반드시 3개, 각각 title+desc)
+- "caseStudy": sectionLabel + title + description (3문장 이상)
+- "summary": title + quote + author (선택)
+- "table": title + tableHeaders (3개) + tableRows (3-5행)
+- "content": title + description + items
+- "closing": title`;
 
-## 슬라이드 type 선택 규칙
-- "cover": 첫 슬라이드. title + subtitle
-- "intro": 주제 소개. title + description (2-4문장의 상세 본문)
-- "objectives": 목표/요약 3가지. title + items (반드시 3개)
-- "section": 파트 구분. partNumber + title + subtitle
-- "twoColumn": 비교/대조 2가지. title + items (반드시 2개, 각각 title+desc)
-- "threeCards": 핵심 포인트 3가지. title + items (반드시 3개, 각각 title+desc)
-- "caseStudy": 사례 연구. sectionLabel="Case Study" + title + description (3문장 이상)
-- "summary": 소결/핵심 메시지. title + quote (핵심 문장) + author (선택)
-- "table": 비교표. title + tableHeaders (3개) + tableRows (3-5행, 각 3열)
-- "content": 일반 콘텐츠. title + description + items
-- "closing": 마지막 슬라이드. title
-
-## 구성 규칙
-- 1번째: 반드시 "cover", 마지막: 반드시 "closing"
-- 중간: 내용에 따라 다양한 type을 균형있게 배치 (같은 type 연속 2번 이상 금지)
-- section 슬라이드로 큰 주제를 구분하고, 하위에 상세 슬라이드 배치
+      const qualityRules = `## 품질 규칙
+- 구체적 수치, 통계, 사례를 반드시 포함
+- description 최소 2-3문장, items desc 최소 1-2문장
+- 같은 type 연속 2번 금지, 다양한 type 균형 배치
+- script: 약 ${secPerSlide}초 분량, 3-5문장
 ${useImages ? '- 각 슬라이드에 "imagePrompt"(영문 40-80단어) 추가' : ""}
+- JSON만 출력 (마크다운 없이): {"slides":[...]}`;
 
-## script 필드
-각 슬라이드에 "script" 필드 추가. 발표자가 해당 슬라이드에서 ${dur}분/${n}슬라이드 = 약 ${Math.round((dur / n) * 60)}초 분량으로 설명할 내용을 3-5문장으로 작성.
+      for (let batch = 0; batch < totalBatches; batch++) {
+        const isFirst = batch === 0;
+        const isLast = batch === totalBatches - 1;
+        const batchSize = isLast ? sc - allSlides.length : BATCH;
+        const batchNum = batch + 1;
 
-JSON만 출력 (마크다운 없이):
-{"slides":[...]}
+        onStatusChange(`슬라이드 생성 중... (${batchNum}/${totalBatches})`);
+        onProgressChange(40 + Math.round((batch / totalBatches) * 40));
+
+        const existingTitles = allSlides.length > 0
+          ? `\n\n기존 슬라이드 제목 (중복 금지):\n${allSlides.map((s) => s.title).join(", ")}`
+          : "";
+
+        const structureHint = isFirst
+          ? `- 1번째는 반드시 "cover" type`
+          : isLast
+            ? `- 마지막은 반드시 "closing" type`
+            : `- section type으로 파트를 구분하세요`;
+
+        const prompt = `전문 프레젠테이션 디자이너로서 ${batchSize}개 슬라이드를 생성하세요.
+전체 ${sc}장 중 ${allSlides.length + 1}~${allSlides.length + batchSize}번째 슬라이드입니다.
+
+${typeRules}
+
+## 구성
+${structureHint}
+${qualityRules}
+${existingTitles}
 
 ## 리서치 내용:
 ${data.substring(0, 6000)}`;
 
-      const slideRes = await ask(null, slidePrompt, false);
-      const raw = pullText(slideRes);
-      const parsed = tryParse(raw) as { slides?: SlideData[]; recommendedTheme?: string } | null;
-
-      if (!parsed?.slides?.length) {
-        throw new Error(
-          `슬라이드 파싱 실패.\n\nAPI 응답 (처음 300자):\n${raw?.substring(0, 300) || "(빈 응답)"}\n\nstop_reason: ${slideRes.stop_reason || "unknown"}`
-        );
+        try {
+          const res = await ask(null, prompt, false);
+          const raw = pullText(res);
+          const parsed = tryParse(raw) as { slides?: SlideData[] } | null;
+          if (parsed?.slides?.length) {
+            allSlides = [...allSlides, ...parsed.slides];
+          }
+        } catch (e) {
+          if (isFirst) throw e; // 첫 배치 실패는 치명적
+          // 이후 배치 실패는 기존 슬라이드로 계속
+        }
       }
 
-      let allSlides = parsed.slides;
-
-      if (allSlides.length < sc) {
-        const extraBatches = Math.ceil((sc - allSlides.length) / 8);
-        const existingTitles = allSlides.map((s) => s.title).join(", ");
-        for (let b = 0; b < extraBatches && allSlides.length < sc; b++) {
-          onStatusChange(`추가 슬라이드 생성 ${b + 1}/${extraBatches}...`);
-          onProgressChange(60 + Math.round((b / extraBatches) * 30));
-          const need = Math.min(8, sc - allSlides.length);
-          try {
-            const extra = await ask(
-              null,
-              `아래 리서치 내용을 기반으로 추가 슬라이드 ${need}개를 생성하세요.
-
-기존 슬라이드 제목: ${existingTitles}
-→ 기존 내용과 중복되지 않는 새로운 관점/데이터를 다루세요.
-
-사용 가능한 type: intro, objectives, twoColumn, threeCards, caseStudy, summary, table, content
-- 다양한 type을 골고루 사용하세요
-- 구체적 수치와 사례를 포함하세요
-- description과 items의 desc는 최소 1-2문장
-
-JSON만 출력: {"slides":[...]}
-
-리서치 내용:
-${data.substring(0, 4000)}`,
-              false
-            );
-            const ep = tryParse(pullText(extra)) as { slides?: SlideData[] } | null;
-            if (ep?.slides?.length) allSlides = [...allSlides, ...ep.slides];
-          } catch {
-            // continue with what we have
-          }
-        }
+      if (!allSlides.length) {
+        throw new Error("슬라이드 생성 실패: 결과가 비어있습니다.");
       }
 
       if (useImages) {
@@ -273,9 +266,7 @@ ${data.substring(0, 4000)}`,
 
       const finalTheme = useTemplate
         ? THEMES.pptxTemplate
-        : chosenTheme ||
-          (parsed.recommendedTheme && THEMES[parsed.recommendedTheme]) ||
-          THEMES.neonGaming;
+        : chosenTheme || THEMES.neonGaming;
 
       onProgressChange(100);
       onStatusChange("완료!");
