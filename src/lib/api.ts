@@ -20,9 +20,19 @@ export async function ask(
   userContent: string,
   useSearch = false
 ): Promise<ClaudeMessage> {
-  const res = await fetch("/api/claude", {
+  // GitHub Pages에서는 API 라우트가 동작하지 않으므로 Supabase Edge Function 직접 호출
+  const url = _SB_URL
+    ? `${_SB_URL}/functions/v1/gemini-proxy`
+    : "/api/claude";
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (_SB_URL && _SB_KEY) {
+    headers["Authorization"] = `Bearer ${_SB_KEY}`;
+  }
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ system, userContent, useSearch }),
   });
 
