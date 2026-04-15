@@ -41,7 +41,10 @@ export async function ask(
       "Content-Type": "application/json",
       Authorization: `Bearer ${_SB_KEY}`,
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({
+      content,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 65536 },
+    }),
   });
 
   if (!res.ok) {
@@ -86,11 +89,15 @@ export function pullSources(d: AskResult): Source[] {
 export function tryParse(raw: string | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null;
   const c = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+  // 1) 완전한 JSON 시도
   try {
     return JSON.parse(c);
   } catch {
-    // try to extract JSON object
+    // continue
   }
+
+  // 2) 중괄호 매칭으로 완전한 객체 추출
   let depth = 0;
   let start = -1;
   for (let i = 0; i < c.length; i++) {
@@ -109,6 +116,39 @@ export function tryParse(raw: string | undefined): Record<string, unknown> | nul
       }
     }
   }
+
+  // 3) 잘린 JSON 복구 — slides 배열에서 완성된 객체들만 추출
+  const slidesMatch = c.match(/"slides"\s*:\s*\[/);
+  if (slidesMatch && start >= 0) {
+    const arrStart = c.indexOf("[", (slidesMatch.index ?? 0));
+    if (arrStart >= 0) {
+      // 완성된 슬라이드 객체들만 수집
+      const slides: unknown[] = [];
+      let objDepth = 0;
+      let objStart = -1;
+      for (let i = arrStart + 1; i < c.length; i++) {
+        if (c[i] === "{") {
+          if (objDepth === 0) objStart = i;
+          objDepth++;
+        }
+        if (c[i] === "}") {
+          objDepth--;
+          if (objDepth === 0 && objStart >= 0) {
+            try {
+              slides.push(JSON.parse(c.substring(objStart, i + 1)));
+            } catch {
+              // skip malformed
+            }
+            objStart = -1;
+          }
+        }
+      }
+      if (slides.length > 0) {
+        return { slides };
+      }
+    }
+  }
+
   return null;
 }
 
