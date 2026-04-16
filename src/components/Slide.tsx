@@ -2,7 +2,6 @@
 
 import { Play } from "lucide-react";
 import { SlideData, Theme } from "@/lib/types";
-import { BASE_PATH } from "@/lib/base-path";
 import SlideImage from "./SlideImage";
 
 interface SlideProps {
@@ -55,246 +54,309 @@ function GridOverlay({ theme }: { theme: Theme }) {
   );
 }
 
-/* ═══ 원본 PPTX 배경이미지 기반 템플릿 ═══ */
+/* ═══ PPTX 스타일 템플릿 — CSS 기반 (배경 이미지 없음) ═══ */
 const TF = "'맑은 고딕','Malgun Gothic','Pretendard',sans-serif";
 const CY = "#06B6D4"; // 시안
 const RD = "#EF4444"; // 레드
 const SK = "#38BDF8"; // 스카이
 const GR = "#94A3B8"; // 그레이
+const BG = "#0F172A"; // 배경 네이비
+const BG_LIGHT = "#1E293B"; // 밝은 네이비
 
-/** AI 타입 → 원본 템플릿 슬라이드 번호 매핑 */
-function getTemplateNum(type: string, idx: number): number {
-  switch (type) {
-    case "cover": return 1;
-    case "intro": return 2;
-    case "objectives": return idx === 2 ? 3 : 8; // 3카드
-    case "section": return 4;
-    case "twoColumn": return 5;
-    case "example": return 6;
-    case "caseStudy": return idx % 2 === 0 ? 7 : 11;
-    case "threeCards": return 8;
-    case "summary": return 9;
-    case "imageText": return 10;
-    case "caseDetail": return 11;
-    case "keyValue": return 12;
-    case "table": return 13;
-    case "closing": return 14;
-    default: return 8; // content → 3카드 레이아웃
-  }
+/** 배경 그라디언트 데코 (CSS 전용, 항상 동일 위치) */
+function TemplateBG() {
+  return (
+    <>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at top right, rgba(56,189,248,0.08), transparent 60%), radial-gradient(ellipse at bottom left, rgba(6,182,212,0.05), transparent 60%), ${BG}`,
+        }}
+      />
+      {/* 상단 액센트 라인 */}
+      <div
+        className="absolute top-0 left-0 right-0"
+        style={{ height: 3, background: `linear-gradient(90deg, ${CY}, ${SK}, transparent)` }}
+      />
+    </>
+  );
 }
 
-/* ═══ 원본 배경이미지 기반 TemplateSlide ═══ */
-function TemplateSlide({ slide: s, idx }: { slide: SlideData; idx: number }) {
+/* ═══ TemplateSlide — 타입별 CSS 레이아웃 ═══ */
+function TemplateSlide({ slide: s, idx: _idx }: { slide: SlideData; idx: number }) {
   const type = s.type || "content";
-  const tplNum = getTemplateNum(type, idx);
   const items = s.items || [];
-  const gi = (i: number) => { const it = items[i]; return it ? (typeof it === "string" ? { t: it, d: undefined } : { t: it.title, d: it.desc }) : null; };
+  const gi = (i: number) => {
+    const it = items[i];
+    return it ? (typeof it === "string" ? { t: it, d: undefined } : { t: it.title, d: it.desc }) : null;
+  };
 
-  return (
-    <div className="relative h-full w-full" style={{ fontFamily: TF, background: "#0F172A" }}>
-      {/* 원본 슬라이드 배경 이미지 */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${BASE_PATH}/slide-${tplNum}.png)`, backgroundSize: "cover" }}
-      />
-
-      {/* 텍스트 오버레이 — 원본 플레이스홀더 위치에 맞춤 */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-center animate-slide-up" style={{ padding: "8% 6%" }}>
-
-        {/* 슬라이드 1: 커버 */}
-        {tplNum === 1 && (
-          <div className="flex h-full items-end pb-[15%]">
-            <div className="space-y-2">
-              <h1 className="text-4xl font-bold md:text-5xl" style={{ color: "#F8FAFC" }}>{s.title}</h1>
-              {s.subtitle && <p className="text-xl" style={{ color: CY }}>{s.subtitle}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 2: Introduction */}
-        {tplNum === 2 && (
-          <div className="flex flex-col items-center text-center space-y-4 pt-[5%]">
-            <span className="text-xs tracking-[.3em] uppercase" style={{ color: GR }}>Introduction</span>
-            <div className="mx-auto" style={{ width: 60, height: 2, background: SK }} />
-            <h2 className="text-3xl font-bold" style={{ color: "#F8FAFC" }}>{s.title}</h2>
-            {s.description && <p className="max-w-2xl text-sm leading-relaxed" style={{ color: GR }}>{s.description}</p>}
-          </div>
-        )}
-
-        {/* 슬라이드 3/8: 3카드 (objectives/threeCards) */}
-        {(tplNum === 3 || tplNum === 8) && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {items.slice(0, 3).map((_, i) => { const it = gi(i); return it ? (
-                <div key={i} className="rounded-xl p-5" style={{ background: "rgba(15,23,42,.7)", border: "1px solid rgba(148,163,184,.15)" }}>
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full" style={{ background: "rgba(6,182,212,.15)" }}>
-                    <span style={{ color: CY, fontSize: 18 }}>{["⚖️", "🛡️", "🔔"][i % 3]}</span>
-                  </div>
-                  <h4 className="text-sm font-bold" style={{ color: "#F8FAFC" }}>{it.t}</h4>
-                  {it.d && <p className="mt-1 text-xs" style={{ color: GR }}>{it.d}</p>}
-                </div>
-              ) : null; })}
-            </div>
-            {s.description && <p className="text-center text-xs" style={{ color: GR }}>{s.description}</p>}
-          </div>
-        )}
-
-        {/* 슬라이드 4: Part 구분 */}
-        {tplNum === 4 && (
-          <div className="flex flex-col items-center text-center space-y-3">
-            <span className="text-sm" style={{ color: SK }}>Part {s.partNumber || 1}</span>
-            <div className="mx-auto" style={{ width: 50, height: 2, background: SK }} />
-            <h1 className="text-4xl font-bold" style={{ color: "#F8FAFC" }}>{s.title}</h1>
-            {s.subtitle && <p className="text-base" style={{ color: GR }}>{s.subtitle}</p>}
-          </div>
-        )}
-
-        {/* 슬라이드 5: 2열 카드 */}
-        {tplNum === 5 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            <div className="grid grid-cols-2 gap-5">
-              {[0, 1].map(i => { const it = gi(i); return it ? (
-                <div key={i} className="rounded-xl p-5" style={{ background: "rgba(15,23,42,.6)", border: "1px solid rgba(148,163,184,.12)" }}>
-                  <h3 className="mb-2 flex items-center gap-2 text-base font-bold" style={{ color: "#F8FAFC" }}>
-                    <span style={{ color: [CY, RD][i] }}>{["🤖", "💡"][i]}</span>{it.t}
-                  </h3>
-                  {it.d && <p className="text-sm leading-relaxed" style={{ color: GR }}>{it.d}</p>}
-                </div>
-              ) : null; })}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 6: 예시 (좌 텍스트 + 우 이미지영역) */}
-        {tplNum === 6 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold" style={{ color: CY }}>{s.title} <span style={{ color: GR }}>[예시]</span></h2>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-3">
-                {items.map((_, i) => { const it = gi(i); return it ? (
-                  <div key={i} className="flex items-start gap-2">
-                    <span style={{ color: GR }}>•</span>
-                    <p className="text-sm" style={{ color: "#F8FAFC" }}><b>{it.t}</b>{it.d ? `: ${it.d}` : ""}</p>
-                  </div>
-                ) : null; })}
-              </div>
-              {s.imageUrl && <div className="overflow-hidden rounded-xl" style={{ border: "1px solid rgba(148,163,184,.15)" }}><SlideImage src={s.imageUrl} tm={GR} cb="rgba(15,23,42,.5)" /></div>}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 7: Case Study 2열 이미지 */}
-        {tplNum === 7 && (
-          <div className="space-y-5">
-            <span className="text-xs font-bold uppercase tracking-[.25em]" style={{ color: RD }}>Case Study</span>
-            <div className="grid grid-cols-2 gap-5">
-              {items.slice(0, 2).map((_, i) => { const it = gi(i); return it ? (
-                <div key={i}>
-                  <h3 className="mb-3 text-xl font-bold" style={{ color: CY }}>{it.t}</h3>
-                  <div className="rounded-xl" style={{ background: "rgba(15,23,42,.5)", border: "1px solid rgba(148,163,184,.12)", height: 160, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {s.imageUrl ? <SlideImage src={s.imageUrl} tm={GR} cb="rgba(15,23,42,.5)" /> : <span style={{ color: GR, fontSize: 12 }}>이미지</span>}
-                  </div>
-                </div>
-              ) : null; })}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 9: 소결 */}
-        {tplNum === 9 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title || "소결"}</h2>
-            <div className="flex flex-col items-center text-center space-y-4 pt-4">
-              <span className="text-4xl" style={{ color: GR }}>&ldquo;</span>
-              <h3 className="text-2xl font-bold" style={{ color: "#F8FAFC" }}>{s.quote || s.title}</h3>
-              {s.description && <p className="text-sm" style={{ color: GR }}>{s.description}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 10: 텍스트+이미지 */}
-        {tplNum === 10 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            <div className="grid grid-cols-2 gap-6 items-start">
-              <div className="space-y-3">
-                {s.description && <p className="text-sm leading-relaxed" style={{ color: "#F8FAFC" }}>{s.description}</p>}
-                {items.map((_, i) => { const it = gi(i); return it ? <p key={i} className="text-sm font-bold" style={{ color: "#F8FAFC" }}>{it.t}</p> : null; })}
-              </div>
-              {s.imageUrl && <div className="overflow-hidden rounded-xl" style={{ border: "1px solid rgba(148,163,184,.15)" }}><SlideImage src={s.imageUrl} tm={GR} cb="rgba(15,23,42,.5)" /></div>}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 11: Case Study 상세 */}
-        {tplNum === 11 && (
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-[.25em]" style={{ color: RD }}>Case Study</span>
-            <div className="grid grid-cols-2 gap-6 items-start">
-              <div className="space-y-3">
-                <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-                {s.description && <p className="text-sm leading-relaxed" style={{ color: GR }}>{s.description}</p>}
-              </div>
-              {s.imageUrl && <div className="overflow-hidden rounded-xl" style={{ border: "1px solid rgba(148,163,184,.15)" }}><SlideImage src={s.imageUrl} tm={GR} cb="rgba(15,23,42,.5)" /></div>}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 12: 키-값 정리 */}
-        {tplNum === 12 && (
-          <div className="space-y-5">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            <div className="rounded-xl p-5 space-y-3" style={{ background: "rgba(15,23,42,.6)", border: "1px solid rgba(148,163,184,.1)" }}>
-              {items.map((_, i) => { const it = gi(i); return it ? (
-                <div key={i} className="flex items-center gap-2">
-                  <span style={{ color: SK }}>✓</span>
-                  <span className="text-sm font-bold" style={{ color: "#F8FAFC" }}>{it.t}</span>
-                  {it.d && <span className="text-sm" style={{ color: GR }}>: {it.d}</span>}
-                </div>
-              ) : null; })}
-            </div>
-          </div>
-        )}
-
-        {/* 슬라이드 13: 비교표 */}
-        {tplNum === 13 && (
-          <div className="space-y-5">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            {s.tableHeaders && s.tableRows && (
-              <table className="w-full text-sm">
-                <thead><tr style={{ borderBottom: `2px solid ${SK}` }}>
-                  {s.tableHeaders.map((h, i) => <th key={i} className="px-4 py-3 text-left" style={{ color: CY }}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {s.tableRows.map((row, ri) => (
-                    <tr key={ri} style={{ borderBottom: "1px solid rgba(148,163,184,.1)" }}>
-                      {row.map((cell, ci) => <td key={ci} className="px-4 py-3" style={{ color: ci === 0 ? "#F8FAFC" : GR }}>{cell}</td>)}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-
-        {/* 슬라이드 14: 마무리 */}
-        {tplNum === 14 && (
-          <div className="flex h-full items-end pb-[15%]">
-            <h1 className="text-4xl font-bold" style={{ color: "#F8FAFC" }}>{s.title || "감사합니다"}</h1>
-          </div>
-        )}
-
-        {/* 폴백: 매핑 안 된 타입 → 기본 콘텐츠 */}
-        {![1,2,3,4,5,6,7,8,9,10,11,12,13,14].includes(tplNum) && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold" style={{ color: CY }}>{s.title}</h2>
-            {s.description && <p className="text-sm" style={{ color: GR }}>{s.description}</p>}
-          </div>
-        )}
+  /* 공통 컨테이너 */
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative h-full w-full overflow-hidden" style={{ fontFamily: TF, background: BG }}>
+      <TemplateBG />
+      <div className="relative z-10 h-full w-full flex flex-col animate-slide-up" style={{ padding: "6% 7%" }}>
+        {children}
       </div>
     </div>
+  );
+
+  /* 커버 */
+  if (type === "cover") {
+    return (
+      <Shell>
+        <div className="flex h-full flex-col justify-end pb-[8%]">
+          <div
+            className="mb-6"
+            style={{ width: 80, height: 4, background: `linear-gradient(90deg, ${CY}, ${SK})` }}
+          />
+          <h1 className="text-5xl font-extrabold leading-tight md:text-6xl" style={{ color: "#F8FAFC" }}>
+            {s.title}
+          </h1>
+          {s.subtitle && (
+            <p className="mt-4 text-xl" style={{ color: CY }}>
+              {s.subtitle}
+            </p>
+          )}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Intro (개요) */
+  if (type === "intro") {
+    return (
+      <Shell>
+        <div className="flex h-full flex-col items-center justify-center text-center space-y-5">
+          <span className="text-xs tracking-[.3em] uppercase font-bold" style={{ color: SK }}>Introduction</span>
+          <div style={{ width: 60, height: 2, background: SK }} />
+          <h2 className="text-3xl font-bold max-w-3xl" style={{ color: "#F8FAFC" }}>{s.title}</h2>
+          {s.description && (
+            <p className="max-w-2xl text-base leading-relaxed" style={{ color: "#CBD5E1" }}>
+              {s.description}
+            </p>
+          )}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Section 구분 */
+  if (type === "section") {
+    return (
+      <Shell>
+        <div className="flex h-full flex-col items-center justify-center text-center space-y-4">
+          <span className="text-sm font-bold tracking-wider" style={{ color: SK }}>
+            PART {s.partNumber || "•"}
+          </span>
+          <div style={{ width: 50, height: 2, background: SK }} />
+          <h1 className="text-4xl font-bold max-w-3xl" style={{ color: "#F8FAFC" }}>{s.title}</h1>
+          {s.subtitle && <p className="text-base" style={{ color: GR }}>{s.subtitle}</p>}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Objectives / ThreeCards (3카드) */
+  if (type === "objectives" || type === "threeCards") {
+    const icons = type === "objectives" ? ["🎯", "✓", "★"] : ["⚖️", "🛡️", "🔔"];
+    return (
+      <Shell>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: CY }}>{s.title}</h2>
+        <div style={{ width: 50, height: 2, background: SK, marginBottom: 24 }} />
+        <div className="grid grid-cols-3 gap-4 flex-1 content-start">
+          {[0, 1, 2].map(i => {
+            const it = gi(i);
+            if (!it) return null;
+            return (
+              <div
+                key={i}
+                className="rounded-xl p-5 flex flex-col"
+                style={{
+                  background: `linear-gradient(135deg, ${BG_LIGHT}, rgba(15,23,42,0.6))`,
+                  border: "1px solid rgba(56,189,248,0.2)",
+                }}
+              >
+                <div
+                  className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg"
+                  style={{ background: "rgba(6,182,212,0.15)" }}
+                >
+                  <span style={{ color: CY, fontSize: 20 }}>{icons[i]}</span>
+                </div>
+                <h4 className="text-base font-bold mb-2" style={{ color: "#F8FAFC" }}>{it.t}</h4>
+                {it.d && <p className="text-sm leading-relaxed" style={{ color: "#CBD5E1" }}>{it.d}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* TwoColumn (2열) */
+  if (type === "twoColumn") {
+    const icons = ["💡", "🎯"];
+    const colors = [CY, SK];
+    return (
+      <Shell>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: CY }}>{s.title}</h2>
+        <div style={{ width: 50, height: 2, background: SK, marginBottom: 24 }} />
+        <div className="grid grid-cols-2 gap-5 flex-1 content-start">
+          {[0, 1].map(i => {
+            const it = gi(i);
+            if (!it) return null;
+            return (
+              <div
+                key={i}
+                className="rounded-xl p-6"
+                style={{
+                  background: `linear-gradient(135deg, ${BG_LIGHT}, rgba(15,23,42,0.6))`,
+                  border: `1px solid ${colors[i]}33`,
+                }}
+              >
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-bold" style={{ color: "#F8FAFC" }}>
+                  <span style={{ color: colors[i] }}>{icons[i]}</span>{it.t}
+                </h3>
+                {it.d && <p className="text-sm leading-relaxed" style={{ color: "#CBD5E1" }}>{it.d}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* CaseStudy */
+  if (type === "caseStudy") {
+    return (
+      <Shell>
+        <span className="text-xs font-bold uppercase tracking-[.25em] mb-3" style={{ color: RD }}>
+          Case Study
+        </span>
+        <h2 className="text-2xl font-bold mb-3" style={{ color: CY }}>{s.title}</h2>
+        <div style={{ width: 50, height: 2, background: RD, marginBottom: 20 }} />
+        <div className="flex-1 grid grid-cols-5 gap-6 items-start">
+          <div className="col-span-3 space-y-3">
+            {s.description && (
+              <p className="text-sm leading-relaxed" style={{ color: "#CBD5E1" }}>{s.description}</p>
+            )}
+          </div>
+          <div
+            className="col-span-2 rounded-xl overflow-hidden aspect-video"
+            style={{ background: BG_LIGHT, border: "1px solid rgba(148,163,184,0.15)" }}
+          >
+            {s.imageUrl ? (
+              <SlideImage src={s.imageUrl} tm={GR} cb={BG_LIGHT} />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-xs" style={{ color: GR }}>
+                사례 이미지
+              </div>
+            )}
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Summary (소결/인용) */
+  if (type === "summary") {
+    return (
+      <Shell>
+        <div className="flex h-full flex-col items-center justify-center text-center space-y-6 px-8">
+          <span className="text-xs tracking-[.3em] uppercase font-bold" style={{ color: SK }}>Summary</span>
+          <div style={{ width: 60, height: 2, background: SK }} />
+          <span className="text-6xl font-serif leading-none" style={{ color: CY, opacity: 0.3 }}>&ldquo;</span>
+          <h3 className="text-2xl md:text-3xl font-bold max-w-3xl leading-relaxed" style={{ color: "#F8FAFC" }}>
+            {s.quote || s.title}
+          </h3>
+          {s.author && <p className="text-sm" style={{ color: GR }}>— {s.author}</p>}
+          {s.description && <p className="text-sm max-w-2xl" style={{ color: "#CBD5E1" }}>{s.description}</p>}
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Table (비교표) */
+  if (type === "table") {
+    return (
+      <Shell>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: CY }}>{s.title}</h2>
+        <div style={{ width: 50, height: 2, background: SK, marginBottom: 24 }} />
+        {s.tableHeaders && s.tableRows && (
+          <div className="overflow-hidden rounded-xl" style={{ border: `1px solid rgba(56,189,248,0.2)` }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: "rgba(56,189,248,0.1)" }}>
+                  {s.tableHeaders.map((h, i) => (
+                    <th key={i} className="px-5 py-3 text-left font-bold" style={{ color: CY }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {s.tableRows.map((row, ri) => (
+                  <tr key={ri} style={{ borderTop: "1px solid rgba(148,163,184,0.1)" }}>
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-5 py-3" style={{ color: ci === 0 ? "#F8FAFC" : "#CBD5E1", fontWeight: ci === 0 ? 600 : 400 }}>
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Shell>
+    );
+  }
+
+  /* Closing (마무리) */
+  if (type === "closing") {
+    return (
+      <Shell>
+        <div className="flex h-full flex-col items-center justify-center text-center space-y-6">
+          <div style={{ width: 80, height: 4, background: `linear-gradient(90deg, ${CY}, ${SK})` }} />
+          <h1 className="text-5xl font-extrabold" style={{ color: "#F8FAFC" }}>
+            {s.title || "감사합니다"}
+          </h1>
+          <p className="text-base" style={{ color: GR }}>Thank You</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  /* Content (일반) — 폴백 */
+  return (
+    <Shell>
+      <h2 className="text-2xl font-bold mb-2" style={{ color: CY }}>{s.title}</h2>
+      <div style={{ width: 50, height: 2, background: SK, marginBottom: 20 }} />
+      {s.description && (
+        <p className="text-base leading-relaxed mb-4" style={{ color: "#CBD5E1" }}>{s.description}</p>
+      )}
+      {items.length > 0 && (
+        <div className="space-y-3 flex-1 content-start">
+          {items.map((_, i) => {
+            const it = gi(i);
+            if (!it) return null;
+            return (
+              <div
+                key={i}
+                className="flex items-start gap-3 rounded-lg p-3"
+                style={{ background: "rgba(30,41,59,0.5)", border: "1px solid rgba(56,189,248,0.1)" }}
+              >
+                <span style={{ color: CY, fontSize: 16, lineHeight: 1.4 }}>▸</span>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: "#F8FAFC" }}>{it.t}</p>
+                  {it.d && <p className="text-sm mt-1" style={{ color: "#CBD5E1" }}>{it.d}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Shell>
   );
 }
 
