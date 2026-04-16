@@ -73,6 +73,10 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      - name: Generate basePath constant
+        env:
+          GITHUB_PAGES: "true"
+        run: node scripts/gen-base-path.mjs
       - name: Build with Next.js
         env:
           GITHUB_PAGES: "true"
