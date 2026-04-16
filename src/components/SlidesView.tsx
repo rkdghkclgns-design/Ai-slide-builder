@@ -8,6 +8,56 @@ import Slide from "./Slide";
 import SourcesModal from "./SourcesModal";
 import SaveModal from "./SaveModal";
 
+/* ── 스크립트 렌더러: 단락 구분 + 강조 컬러링 ── */
+function ScriptRenderer({ text }: { text: string }) {
+  // 메타 라벨 제거: (도입), (핵심 설명), (전환), (보충 설명) 등
+  const cleaned = text
+    .replace(/\(도입[^)]*\)\s*/g, "")
+    .replace(/\(핵심\s*설명[^)]*\)\s*/g, "")
+    .replace(/\(보충\s*설명[^)]*\)\s*/g, "")
+    .replace(/\(전환[^)]*\)\s*/g, "")
+    .replace(/\(연결[^)]*\)\s*/g, "")
+    .replace(/\(마무리[^)]*\)\s*/g, "")
+    .trim();
+
+  const paragraphs = cleaned.split(/\n\n+|\n/).filter((p) => p.trim());
+
+  return (
+    <div className="space-y-4" style={{ fontFamily: "'맑은 고딕','Malgun Gothic',sans-serif", lineHeight: "2" }}>
+      {paragraphs.map((p, i) => (
+        <p key={i} className="text-sm text-white/80">
+          <HighlightText text={p} isFirst={i === 0} />
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/* ── 텍스트 강조: 숫자/퍼센트/기업명/키워드 컬러링 ── */
+function HighlightText({ text, isFirst }: { text: string; isFirst: boolean }) {
+  // 강조 패턴: 숫자+단위, 퍼센트, 따옴표 안 텍스트, 영문 고유명사
+  const parts = text.split(
+    /(\d[\d,.]*\s*(?:%|퍼센트|억|조|만|개|명|건|달러|원|위|배|년|월|GB|TB|MB)|\d{4}년|'[^']+?'|"[^"]+?"|「[^」]+」|『[^』]+』)/g
+  );
+
+  return (
+    <>
+      {parts.map((part, j) => {
+        if (!part) return null;
+        // 숫자+단위 또는 연도
+        if (/^\d[\d,.]*\s*(%|퍼센트|억|조|만|개|명|건|달러|원|위|배|년|월|GB|TB|MB)$/.test(part) || /^\d{4}년$/.test(part)) {
+          return <span key={j} style={{ color: "#60A5FA", fontWeight: 700 }}>{part}</span>;
+        }
+        // 따옴표 안 텍스트
+        if (/^['""「『]/.test(part)) {
+          return <span key={j} style={{ color: "#34D399", fontWeight: 600 }}>{part}</span>;
+        }
+        return <span key={j}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 interface SlidesViewProps {
   slides: SlideData[];
   theme: Theme;
@@ -31,6 +81,7 @@ export default function SlidesView({
   const [exporting, setExporting] = useState(false);
   const [showScript, setShowScript] = useState(true);
   const [editSlides, setEditSlides] = useState<SlideData[]>(initialSlides);
+  const [editMode, setEditMode] = useState(-1);
 
   const slides = editSlides;
   const isLt = t.lt === true;
@@ -204,19 +255,37 @@ export default function SlidesView({
               </p>
             </div>
 
-            {/* Script textarea */}
-            <div className="flex-1 p-5 overflow-auto">
-              <textarea
-                value={slides[cur]?.script || ""}
-                onChange={(e) => updateScript(cur, e.target.value)}
-                placeholder="이 슬라이드에서 설명할 주요 내용을 입력하세요..."
-                className="w-full h-full min-h-[200px] resize-none rounded-xl border bg-transparent p-4 text-sm text-white/80 placeholder-white/20 outline-none transition-colors focus:border-blue-500/30"
-                style={{
-                  borderColor: "rgba(255,255,255,.08)",
-                  lineHeight: "1.8",
-                  fontFamily: "'맑은 고딕','Malgun Gothic',sans-serif",
-                }}
-              />
+            {/* Script display with paragraph breaks and keyword highlighting */}
+            <div className="flex-1 overflow-auto">
+              {editMode === cur ? (
+                <div className="p-5">
+                  <textarea
+                    value={slides[cur]?.script || ""}
+                    onChange={(e) => updateScript(cur, e.target.value)}
+                    onBlur={() => setEditMode(-1)}
+                    autoFocus
+                    placeholder="강의 스크립트를 입력하세요..."
+                    className="w-full h-full min-h-[300px] resize-none rounded-xl border bg-transparent p-4 text-sm text-white/80 placeholder-white/20 outline-none focus:border-blue-500/30"
+                    style={{
+                      borderColor: "rgba(255,255,255,.08)",
+                      lineHeight: "2",
+                      fontFamily: "'맑은 고딕','Malgun Gothic',sans-serif",
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="p-5 cursor-pointer hover:bg-white/[.02] transition-colors"
+                  onClick={() => setEditMode(cur)}
+                  title="클릭하여 편집"
+                >
+                  {slides[cur]?.script ? (
+                    <ScriptRenderer text={slides[cur].script!} />
+                  ) : (
+                    <p className="text-sm text-white/20 italic">클릭하여 스크립트를 입력하세요...</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Slide navigation in script panel */}

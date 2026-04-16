@@ -195,18 +195,22 @@ ${data.substring(0, 6000)}`, false);
       const totalBatches = Math.ceil(sc / BATCH);
       let allSlides: SlideData[] = [];
 
-      const typeSpec = `## type별 필수 필드
-- "cover": title, subtitle
-- "intro": title, description (개요 — 3-5문장. 이 강의의 배경, 필요성, 다룰 내용을 소개)
-- "objectives": title, items (학습 목표 — 반드시 3개, 각 {title, desc}. "~할 수 있다" 형식)
-- "section": partNumber, title, subtitle
-- "twoColumn": title, items (반드시 2개, 각 {title, desc} — desc 3문장 이상)
-- "threeCards": title, items (반드시 3개, 각 {title, desc} — desc 3문장 이상)
-- "caseStudy": sectionLabel="Case Study", title, description (5문장 이상. 반드시 기업명/제품명, 도입 배경, 적용 방법, 결과(수치), 시사점 포함)
-- "summary": title, quote (핵심 문장), author (선택)
-- "table": title, tableHeaders (3-4개), tableRows (5-7행, 실제 비교 데이터)
-- "content": title, description (3문장 이상), items (3-5개, 각 desc 2문장 이상)
-- "closing": title`;
+      const typeSpec = `## type별 필수 필드 (슬라이드 본문은 발표용으로 간결하게!)
+- "cover": title, subtitle (한줄)
+- "intro": title, description (개요 — 2-3문장으로 간결하게. 배경과 필요성만)
+- "objectives": title, items (학습 목표 — 반드시 3개, 각 {title, desc}. desc는 1문장. "~할 수 있다" 형식)
+- "section": partNumber, title, subtitle (한줄)
+- "twoColumn": title, items (반드시 2개, 각 {title, desc} — desc 1-2문장 핵심만)
+- "threeCards": title, items (반드시 3개, 각 {title, desc} — desc 1-2문장 핵심만)
+- "caseStudy": sectionLabel="Case Study", title, description (2-3문장. 기업명+결과 핵심만)
+- "summary": title, quote (핵심 문장 1개), author (선택)
+- "table": title, tableHeaders (3-4개), tableRows (4-6행, 간결한 데이터)
+- "content": title, description (1-2문장), items (3-5개, 각 desc 1문장 핵심 키워드)
+- "closing": title
+
+## 중요: 슬라이드 vs 스크립트 역할 분리
+- 슬라이드 본문(description, items desc): 청중이 보는 화면. 키워드와 핵심 포인트만. 긴 문장 금지.
+- script: 강사가 읽는 대본. 여기에 상세 설명, 수치, 사례, 배경을 모두 담으세요.`;
 
       for (let batch = 0; batch < totalBatches; batch++) {
         const isFirst = batch === 0;
@@ -227,35 +231,26 @@ ${data.substring(0, 6000)}`, false);
 
 ${typeSpec}
 
-## 콘텐츠 품질 기준 (교안 도우미 수준 — 매우 중요!)
-1. 설계 의도 부합성: 목차의 의도와 내용이 정확히 일치해야 합니다.
-2. 대상 수준 적합성: 초보자도 이해할 수 있되, 전문 용어는 유지하고 괄호 안에 풀어쓴 정의를 병기하세요.
-3. 사실 기반: 근거 없는 단정이나 추측 금지. 구체적 수치, 연도, 기업명을 포함하세요.
-4. 분량 기준:
-   - description: 최소 4문장 (배경→핵심→사례→의의)
-   - items desc: 최소 3문장 (정의→설명→예시)
-   - table: 실제 비교 데이터 5행 이상
-   - caseStudy: 기업명, 도입시기, 적용방법, 결과(수치), 시사점 5문장 이상
-5. 빈 필드, "...", 일반적 문구("다양한 분야에서 활용됩니다" 등) 절대 금지
-6. 구조 연결성: 개요→학습목표→핵심내용→사례→정리 흐름이 자연스러워야 합니다.
+## 슬라이드 본문 품질 (화면에 표시되는 내용)
+- 발표용이므로 간결하게. 청중이 한눈에 파악할 수 있어야 함.
+- description: 1-2문장. 핵심만. 긴 설명은 script에.
+- items title: 키워드 수준 (5-15자)
+- items desc: 1문장 핵심 포인트
+- "다양한 분야에서 활용됩니다" 같은 일반적 문구 금지. 구체적으로.
+- 빈 필드, "..." 금지
 
 ## script 작성 기준 (강사 대본 — 바로 강의 가능 수준)
 각 슬라이드에 "script" 필드 추가. 강사가 이 대본만 읽으면 바로 수업 가능해야 합니다.
 - 분량: 약 ${secPerSlide}초 (${Math.round(secPerSlide * 3)}자 내외)
-- 필수 구성:
-  (1) 도입 한줄: "자, 이제 [주제]에 대해 알아보겠습니다." 또는 질문형 도입
-  (2) 핵심 설명 (3-5문장): 슬라이드 내용을 구체적으로 풀어서 설명. 수치/사례 반드시 인용.
-  (3) 보충 설명: 비유, 실제 사례, "예를 들면~" 표현 활용
-  (4) 전환: "다음으로 [다음 주제]를 살펴보겠습니다." 자연스러운 연결
-- 톤: 합쇼체(~합니다, ~입니다). 전문적이면서 이해하기 쉬운 강의 톤.
-- 청중 참여: "여러분은 어떻게 생각하시나요?", "혹시 경험이 있으신가요?" 등 간간이 활용
+- 형식: 자연스러운 강의체 문장으로 작성. 단락 간 줄바꿈(\n\n)으로 구분.
+- 절대 금지: "(도입)", "(핵심 설명)", "(전환)" 등 메타 라벨을 script에 넣지 마세요. 강사가 그대로 읽는 대본입니다.
+- 구성 (라벨 없이 자연스럽게):
+  첫 문장: 주제를 자연스럽게 소개하는 도입. 질문형이나 흥미 유발.
+  중간 (3-6문장): 핵심 내용을 구체적 수치/사례와 함께 상세 설명.
+  마지막 문장: 다음 슬라이드로 자연스럽게 연결.
+- 톤: 합쇼체(~합니다, ~입니다). 전문적이지만 이해하기 쉽게.
+- 구체성: 슬라이드에 못 담은 상세 수치, 사례, 배경을 스크립트에서 충분히 설명.
 ${useImages ? '\n- 각 슬라이드에 "imagePrompt"(영문 40-80단어, 교육 자료 스타일 일러스트) 추가' : ""}
-
-[자체 검증] 초안 작성 후 아래 확인 후 최종본만 출력:
-- 모든 description이 4문장 이상인가?
-- 모든 items desc가 3문장 이상인가?
-- 빈 필드나 플레이스홀더가 없는가?
-- script가 실제 강의 가능한 수준인가?
 
 JSON만 출력 (마크다운 코드블록 없이): {"slides":[...]}
 ${outlineGuide}
